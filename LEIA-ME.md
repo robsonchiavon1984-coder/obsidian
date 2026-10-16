@@ -44,12 +44,37 @@ No Safari, abra o endereço e toque em Compartilhar e depois em "Adicionar à Te
   - no Drive, vão para a lixeira do Google Drive;
   - numa pasta local, vão para a pasta `.trash` do cofre.
 
+## Edição unificada
+
+Edição e leitura são uma coisa só. O texto aparece formatado enquanto você escreve: negrito como negrito, links como links, títulos grandes, caixas de destaque, tabelas, imagens e PDFs incorporados. Os códigos Markdown só aparecem no trecho exato em que está o cursor, para permitir editá-lo.
+
+No topo da nota há dois botões:
+
+| Botão | Função |
+|---|---|
+| `< >` | Mostra todos os códigos (modo código-fonte). |
+| Livro | Abre o modo somente leitura. |
+
+Clicar num link abre a nota de destino. Para editar o link, leve o cursor até ele com as setas do teclado.
+
+## Códigos e leis
+
+Quando a nota tem pelo menos três artigos ("Art. 1º", "Art. 2º"…), o Códex a trata como lei. Funciona bem com o texto copiado do Planalto.
+
+- O painel Sumário, na barra direita, mostra a árvore Parte › Livro › Título › Subtítulo › Capítulo › Seção › Subseção › Artigo. Clique para ir ao ponto. O campo de filtro aceita, por exemplo, "art 5" ou "capítulo II".
+- Linhas de Título, Capítulo e semelhantes aparecem centralizadas. Os números dos dispositivos (Art., §, incisos, alíneas) aparecem em negrito.
+- Comentários por dispositivo: ponha o cursor no artigo, parágrafo, inciso ou alínea e clique no botão de comentário da barra de formatação, ou use Ctrl/⌘+Shift+M.
+  - O comentário é salvo como uma nota comum em `Comentários/<nome da lei>/Art. 5º, § 1º.md`. Pode ser longo e ter links, tags e formatação.
+  - Dispositivos comentados ficam sublinhados em pontilhado, com um pequeno ícone ao lado. Passar o mouse sobre o número ("Art. 5º", "§ 1º", "I", "a)") mostra o comentário. No iPad, toque no ícone.
+  - Na janela do comentário dá para editar ou abrir o comentário como nota inteira.
+  - Se a lei for renomeada, a pasta de comentários acompanha.
+
 ## Barra de formatação
 
 Acima do editor ficam os comandos de formatação: negrito, itálico, sublinhado, tachado, fonte, tamanho, cor da fonte, cores de realce, títulos, listas, caixas de destaque e alinhamento de parágrafo.
 
 - Negrito, itálico, tachado, títulos, listas e o realce amarelo usam Markdown puro.
-- Sublinhado, cores, fonte, tamanho e alinhamento de um parágrafo específico usam pequenas etiquetas HTML. No modo edição, elas aparecem em cinza.
+- Sublinhado, cores, fonte, tamanho e alinhamento de um parágrafo específico usam pequenas etiquetas HTML, que só ficam visíveis no trecho em que está o cursor.
 - O alinhamento justificado é o padrão geral. Ele pode ser alterado em Configurações, Aparência e editor, onde também se escolhe a fonte geral das notas.
 
 ## Vínculos entre parágrafos
@@ -72,7 +97,10 @@ O Códex marca o parágrafo de destino com um código curto no fim da linha, com
 | Ctrl/⌘+B, I, U | Negrito, itálico, sublinhado |
 | Ctrl/⌘+Shift+K | Vincular a um parágrafo desta nota |
 | Ctrl/⌘+Shift+C | Copiar vínculo do parágrafo do cursor |
-| Ctrl/⌘+E | Alternar edição e leitura |
+| Ctrl/⌘+E | Alternar edição e somente leitura |
+| Ctrl/⌘+Shift+E | Mostrar ou ocultar os códigos |
+| Ctrl/⌘+Shift+M | Comentar o dispositivo do cursor |
+| Ctrl/⌘+F | Buscar e substituir dentro da nota |
 | Ctrl/⌘+G | Grafo |
 | Ctrl/⌘+Shift+F | Busca |
 | Ctrl/⌘+Shift+D | Nota diária |
