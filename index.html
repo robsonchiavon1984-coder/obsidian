@@ -81,16 +81,24 @@ aside.collapsed{display:none}
 
 /* center */
 #center{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
-#tabbar{display:flex;align-items:flex-end;background:var(--bg2);border-bottom:1px solid var(--border);height:38px;flex:none;overflow-x:auto;scrollbar-width:none;padding:0 4px}
-#tabbar::-webkit-scrollbar{display:none}
+#panes{flex:1;display:flex;min-height:0;min-width:0}
+#panes.col{flex-direction:column}
+.pane-col{flex:1 1 0;display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.pane-divider{flex:none;width:6px;cursor:col-resize;background:var(--border);opacity:.6;touch-action:none}
+.pane-divider:hover{background:var(--accent);opacity:1}
+#panes.col .pane-divider{width:auto;height:6px;cursor:row-resize}
+.pane-col.focused>.tabbar .tab.on{box-shadow:inset 0 2px 0 var(--accent)}
+.tabbar{display:flex;align-items:flex-end;background:var(--bg2);border-bottom:1px solid var(--border);height:38px;flex:none;overflow-x:auto;scrollbar-width:none;padding:0 4px}
+.tabbar::-webkit-scrollbar{display:none}
 .tab{display:flex;align-items:center;gap:6px;height:32px;padding:0 6px 0 10px;max-width:220px;min-width:90px;border-radius:7px 7px 0 0;cursor:pointer;color:var(--muted);flex:none}
 .tab:hover{background:var(--bg3)}
 .tab.on{background:var(--bg);color:var(--text)}
 .tab .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab .x{opacity:.5;width:20px;height:20px}
 .tab .dirty::after{content:"•";color:var(--accent2);margin-left:2px}
-#tabbar .newtab{margin:0 0 3px 4px}
-#views{flex:1;position:relative;min-height:0}
+
+.tabbar .newtab{margin:0 0 3px 4px}
+.views{flex:1;position:relative;min-height:0}
 .view{position:absolute;inset:0;display:none;flex-direction:column}
 .view.on{display:flex}
 .view-head{display:flex;align-items:center;gap:4px;padding:4px 10px;flex:none;min-height:36px}
@@ -374,7 +382,7 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
   .ib{width:34px;height:34px}
 }
 @media print{
-  #ribbon,#left,#right,#tabbar,#statusbar,.view-head{display:none!important}
+  #ribbon,#left,#right,.tabbar,#statusbar,.view-head,.pane-divider{display:none!important}
 }
 
 /* alinhamento justificado */
@@ -502,6 +510,10 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .ol-art .ol-text{color:var(--muted)}
 .ol-h .ol-text{font-weight:500}
 #pane-outline .search-box,#pane-structure .search-box{padding:6px 8px}
+.sel-colors{display:flex;align-items:center;gap:5px;padding:0 6px;border-right:1px solid var(--border);margin-right:2px}
+.sel-pop .sel-dot{width:22px;height:22px;border-radius:50%;padding:0;border:2px solid transparent}
+.sel-pop .sel-dot.on{border-color:var(--text)}
+.sel-pop .sel-dot:hover{transform:scale(1.15);background-blend-mode:normal}
 
 </style>
 </head>
@@ -607,6 +619,7 @@ const ICONS = {
   alignjustify: '<path d="M3 6h18M3 10h18M3 14h18M3 18h18"/>',
   clearfmt: '<path d="M4 7V4h16v3M9 20h6M12 4 9 20M4 4l16 16"/>',
   code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  rows: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18"/>',
   pages: '<rect x="8" y="2" width="13" height="17" rx="2"/><path d="M16 22H5a2 2 0 0 1-2-2V7"/>'
 };
 const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24">${ICONS[n] || ''}</svg>`;
@@ -651,11 +664,11 @@ const Settings = {
     theme: 'dark', defaultMode: 'live', editorSize: 16, lineWidth: 760, readable: true, spellcheck: true, monoEditor: false,
     attachFolder: 'Anexos', dailyFolder: 'Diário', dailyFormat: 'YYYY-MM-DD', dailyTemplate: '', templatesFolder: 'Modelos',
     googleClientId: '', geminiKey: '', geminiModel: 'auto:pro', geminiPaid: false, geminiExtra: '', geminiAgent: false,
-    penColors: ['#1b1b1b', '#1f5fd6', '#d22d2d', '#178a3c', '#8a3fd1', '#e07b00'], hlColors: ['#ffe600', '#7cf06a', '#5ad1ff', '#ff8ad8'],
+    penColors: ['#1b1b1b', '#1f5fd6', '#d22d2d', '#178a3c', '#8a3fd1', '#e07b00'], hlColors: ['#ffe600', '#7cf06a', '#5ad1ff', '#ff8ad8', '#ffa94d', '#b197fc'],
     penOnly: true, textAlign: 'justify', commentsFolder: 'Comentários', justifyEditor: true, textFont: '', showFormatBar: true, notebookPages: 2, notebookPattern: 'lined', showThumbs: false
   },
   data: {},
-  load() { try { this.data = JSON.parse(localStorage.getItem('codex.settings') || '{}'); } catch (e) { this.data = {}; } },
+  load() { try { this.data = JSON.parse(localStorage.getItem('codex.settings') || '{}'); } catch (e) { this.data = {}; } if (Array.isArray(this.data.hlColors) && this.data.hlColors.length < 6) delete this.data.hlColors; },
   get(k) { return k in this.data ? this.data[k] : this.defaults[k]; },
   set(k, v) { this.data[k] = v; localStorage.setItem('codex.settings', JSON.stringify(this.data)); },
   apply() {
@@ -1284,7 +1297,7 @@ const Renderer = {
 /* ===================== NÚCLEO DO APLICATIVO ===================== */
 const App = {
   vault: null, fileMap: new Map(), byName: new Map(), notes: new Map(), blobs: new Map(),
-  tabs: [], active: null, writeChains: new Map(), expanded: new Set(), bookmarks: [],
+  active: null, writeChains: new Map(), expanded: new Set(), bookmarks: [],
 
   /* ---------- arquivos e índice ---------- */
   isHidden: p => p.split('/').some(s => s.startsWith('.')),
@@ -1302,7 +1315,7 @@ const App = {
       this.bookmarks = JSON.parse(localStorage.getItem('codex.bm.' + v.id) || '[]');
       Welcome.hide(); this.renderTree(); Panels.refresh();
       const saved = JSON.parse(localStorage.getItem('codex.tabs.' + v.id) || 'null');
-      if (saved && saved.list.length) { for (const p of saved.list) if (p.startsWith('graph:') || this.fileMap.has(p)) await this.open(p, { newTab: true, silent: true }); const t = this.tabs[saved.active] || this.tabs[0]; t && this.activate(t); }
+      if (saved) await this.restoreTabs(saved);
       if (!this.tabs.length) { const first = [...this.notes.keys()].sort()[0]; if (first) await this.open(first); else this.newTabEmpty(); }
     } catch (e) { UI.error(e); Welcome.show(); }
     finally { Loading.hide(); }
@@ -1540,7 +1553,7 @@ const App = {
     root.addEventListener('click', e => {
       const it = itemOf(e); if (!it) return; const p = it.dataset.path; const f = this.fileMap.get(p);
       if (f.type === 'folder') { this.expanded.has(p) ? this.expanded.delete(p) : this.expanded.add(p); this.saveExpanded(); this.renderTree(); }
-      else { this.open(p, { newTab: e.ctrlKey || e.metaKey }); if (innerWidth < 900) Layout.closeSide('left'); }
+      else { this.open(p, { newTab: e.ctrlKey || e.metaKey, split: e.altKey ? 'row' : undefined }); if (innerWidth < 900) Layout.closeSide('left'); }
     });
     const ctx = (x, y, p) => { const f = this.fileMap.get(p); if (!f) return this.treeMenu(x, y, ''); this.treeMenu(x, y, p, f); };
     root.addEventListener('contextmenu', e => { e.preventDefault(); const it = itemOf(e); ctx(e.clientX, e.clientY, it ? it.dataset.path : ''); });
@@ -1572,6 +1585,7 @@ const App = {
       items.push('-');
       if (f.type === 'file') {
         items.push({ label: 'Abrir em nova aba', icon: 'plus', action: () => this.open(p, { newTab: true }) });
+        items.push({ label: 'Abrir ao lado (tela dividida)', icon: 'columns', action: () => this.openBeside(p) });
         if (extOf(p) === 'md') items.push({ label: 'Transformar em caderno PDF', icon: 'book', action: () => Notebook.fromNote(p) });
         items.push({ label: this.bookmarks.includes(p) ? 'Remover dos favoritos' : 'Adicionar aos favoritos', icon: 'star', action: () => this.toggleBookmark(p) });
         items.push({ label: 'Copiar link [[...]]', icon: 'link', action: () => navigator.clipboard.writeText('[[' + this.linkText(p) + ']]') });
@@ -1590,46 +1604,140 @@ const App = {
   },
   async download(p) { const b = await this.vault.readBinary(p); const a = h('a', { href: URL.createObjectURL(b), download: baseOf(p) }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); },
 
-  /* ---------- abas ---------- */
+  /* ---------- painéis (tela dividida) e abas ---------- */
+  panes: [], focusPane: null, splitDir: 'row',
+  makePane() {
+    const p = { tabs: [], active: null };
+    p.bar = h('div', { class: 'tabbar' }); p.views = h('div', { class: 'views' });
+    p.el = h('div', { class: 'pane-col' }, p.bar, p.views);
+    p.el.addEventListener('pointerdown', () => { if (this.focusPane !== p) this.focus(p); }, true);
+    return p;
+  },
+  initPanes() { const host = $('#panes'); host.innerHTML = ''; const p = this.makePane(); host.append(p.el); this.panes = [p]; this.focusPane = p; },
+  otherPane(p = this.focusPane) { return this.panes.find(x => x !== p); },
+  ensureSplit(dir) {
+    if (this.panes.length > 1) { if (dir && dir !== this.splitDir) this.setSplitDir(dir); return this.otherPane(); }
+    if (dir) this.splitDir = dir;
+    const host = $('#panes'); const p = this.makePane();
+    const div = h('div', { class: 'pane-divider' }); host.append(div, p.el); this.panes.push(p);
+    host.classList.toggle('col', this.splitDir === 'col');
+    const ratio = +localStorage.getItem('codex.splitRatio') || 0.5; this.setRatio(ratio);
+    div.addEventListener('pointerdown', e => {
+      e.preventDefault(); div.setPointerCapture(e.pointerId); const r = host.getBoundingClientRect();
+      const mv = ev => this.setRatio(this.splitDir === 'col' ? (ev.clientY - r.top) / r.height : (ev.clientX - r.left) / r.width);
+      const up = () => { div.removeEventListener('pointermove', mv); localStorage.setItem('codex.splitRatio', this.ratio); this.tabs.forEach(t => t.view?.cm?.requestMeasure()); };
+      div.addEventListener('pointermove', mv); div.addEventListener('pointerup', up, { once: true }); div.addEventListener('pointercancel', up, { once: true });
+    });
+    this.renderTabs(); return p;
+  },
+  setRatio(r) { this.ratio = Math.max(0.15, Math.min(0.85, r)); const [a, b] = this.panes; if (!b) return; a.el.style.flex = `${this.ratio} 1 0`; b.el.style.flex = `${1 - this.ratio} 1 0`; },
+  setSplitDir(dir) { this.splitDir = dir; $('#panes').classList.toggle('col', dir === 'col'); this.saveTabs(); this.tabs.forEach(t => t.view?.cm?.requestMeasure()); },
+  async closePane(p) {
+    for (const t of [...p.tabs]) await this.closeTab(t, false, true);
+    if (this.panes.length < 2) return;
+    p.el.previousElementSibling?.classList.contains('pane-divider') ? p.el.previousElementSibling.remove() : p.el.nextElementSibling?.remove();
+    p.el.remove(); this.panes = this.panes.filter(x => x !== p); this.panes[0].el.style.flex = '';
+    this.focus(this.panes[0]); this.saveTabs();
+  },
+  focus(p) {
+    this.focusPane = p; this.panes.forEach(x => x.el.classList.toggle('focused', x === p && this.panes.length > 1));
+    if (p.active) { this.active = p.active; this.renderTree(); Panels.refresh(); Status.update(); } else this.active = null;
+  },
+  get tabs() { return this.panes.flatMap(p => p.tabs); },
+  set tabs(v) { },
   async open(path, opts = {}) {
     if (!path) return;
     if (!path.startsWith('graph:') && !this.fileMap.has(path)) { UI.toast('Arquivo não encontrado: ' + path, true); return; }
-    let tab = !opts.newTab ? this.tabs.find(t => t.path === path) : null;
+    let tab = !opts.newTab || opts.split ? this.tabs.find(t => t.path === path) : null;
     if (tab) { this.activate(tab); tab.view?.goto?.(opts); return tab; }
-    tab = (opts.newTab || !this.active) ? this.newTab() : this.active;
+    let pane = opts.pane || this.focusPane;
+    if (opts.split) pane = this.ensureSplit(opts.split === true ? null : opts.split);
+    tab = (opts.newTab || opts.split || !pane.active) ? this.newTab(pane) : pane.active;
     await tab.load(path, opts);
     if (!opts.silent || !this.active) this.activate(tab);
     this.saveTabs(); return tab;
   },
-  newTab() { const t = new Tab(); this.tabs.push(t); return t; },
-  newTabEmpty() { const t = this.newTab(); t.empty(); this.activate(t); },
+  openBeside(path, opts = {}) { return this.open(path, { ...opts, split: true }); },
+  newTab(pane = this.focusPane) { const t = new Tab(pane); pane.tabs.push(t); return t; },
+  newTabEmpty(pane = this.focusPane) { const t = this.newTab(pane); t.empty(); this.activate(t); },
   activate(tab) {
-    if (this.active && this.active !== tab) this.active.view?.onHide?.();
-    this.active = tab; this.tabs.forEach(t => t.el.classList.toggle('on', t === tab));
+    const p = tab.pane;
+    if (p.active && p.active !== tab) p.active.view?.onHide?.();
+    p.active = tab; p.tabs.forEach(t => t.el.classList.toggle('on', t === tab));
+    this.focusPane = p; this.active = tab; this.panes.forEach(x => x.el.classList.toggle('focused', x === p && this.panes.length > 1));
     tab.view?.onShow?.(); this.renderTabs(); this.renderTree(); Panels.refresh(); Status.update(); this.saveTabs();
   },
-  async closeTab(tab, force) {
+  async closeTab(tab, force, keepPane) {
     if (!force && tab.view?.flush) await tab.view.flush();
     await tab.view?.destroy?.(); tab.el.remove();
-    const i = this.tabs.indexOf(tab); this.tabs.splice(i, 1);
-    if (this.active === tab) { this.active = null; const n = this.tabs[i] || this.tabs[i - 1]; if (n) this.activate(n); else { this.renderTabs(); Panels.refresh(); this.renderTree(); } }
-    else this.renderTabs();
+    const p = tab.pane; const i = p.tabs.indexOf(tab); p.tabs.splice(i, 1);
+    if (p.active === tab) {
+      p.active = null; const n = p.tabs[i] || p.tabs[i - 1];
+      if (n) this.activate(n);
+      else if (!keepPane && this.panes.length > 1) { await this.closePane(p); return; }
+      else { if (this.active === tab) this.active = null; this.renderTabs(); Panels.refresh(); this.renderTree(); }
+    } else this.renderTabs();
     this.saveTabs();
   },
-  closeAllTabs() { for (const t of [...this.tabs]) { t.view?.destroy?.(); t.el.remove(); } this.tabs = []; this.active = null; this.renderTabs(); },
-  saveTabs() { if (!this.vault) return; localStorage.setItem('codex.tabs.' + this.vault.id, JSON.stringify({ list: this.tabs.filter(t => t.path).map(t => t.path), active: Math.max(0, this.tabs.filter(t => t.path).indexOf(this.active)) })); },
-  renderTabs() {
-    const bar = $('#tabbar'); bar.innerHTML = '';
-    for (const t of this.tabs) {
-      const el = h('div', { class: 'tab' + (t === this.active ? ' on' : ''), title: t.path || '' },
-        h('span', { class: 'nm' + (t.view?.dirty ? ' dirty' : ''), text: t.title() }),
-        h('button', { class: 'ib x', html: icon('x'), onclick: e => { e.stopPropagation(); this.closeTab(t); } }));
-      el.onclick = () => this.activate(t); el.onauxclick = e => { if (e.button === 1) this.closeTab(t); };
-      el.oncontextmenu = e => { e.preventDefault(); UI.menu(e.clientX, e.clientY, [{ label: 'Fechar', action: () => this.closeTab(t) }, { label: 'Fechar as outras', action: async () => { for (const o of this.tabs.filter(o => o !== t)) await this.closeTab(o); } }, t.path && !t.path.startsWith('graph:') ? { label: 'Revelar na árvore', action: () => this.reveal(t.path) } : null]); };
-      bar.append(el);
+  moveTab(tab, to) {
+    const from = tab.pane; if (from === to) return;
+    from.tabs.splice(from.tabs.indexOf(tab), 1); if (from.active === tab) { from.active = from.tabs[0] || null; from.active && from.active.el.classList.add('on'); }
+    tab.pane = to; to.tabs.push(tab); to.views.append(tab.el); this.activate(tab); tab.view?.cm?.requestMeasure();
+    if (!from.tabs.length && this.panes.length > 1) this.closePane(from);
+  },
+  closeAllTabs() { for (const t of this.tabs) { t.view?.destroy?.(); t.el.remove(); } this.initPanes(); this.active = null; this.renderTabs(); },
+  saveTabs() {
+    if (!this.vault) return;
+    const ps = this.panes.map(p => { const l = p.tabs.filter(t => t.path); return { list: l.map(t => t.path), active: Math.max(0, l.indexOf(p.active)) }; });
+    localStorage.setItem('codex.tabs.' + this.vault.id, JSON.stringify({ panes: ps, dir: this.splitDir, focus: this.panes.indexOf(this.focusPane) }));
+  },
+  async restoreTabs(saved) {
+    const ps = saved.panes || [{ list: saved.list || [], active: saved.active || 0 }];
+    if (saved.dir) this.splitDir = saved.dir;
+    for (let i = 0; i < ps.length; i++) {
+      const list = ps[i].list.filter(p => p.startsWith('graph:') || this.fileMap.has(p)); if (!list.length) continue;
+      const pane = i === 0 ? this.panes[0] : this.ensureSplit(saved.dir);
+      for (const p of list) if (!this.tabs.some(t => t.path === p)) await this.open(p, { newTab: true, silent: true, pane });
+      const t = pane.tabs[ps[i].active] || pane.tabs[0]; t && this.activate(t);
     }
-    bar.append(h('button', { class: 'ib newtab', title: 'Nova aba', html: icon('plus'), onclick: () => this.newTabEmpty() }));
-    bar.querySelector('.tab.on')?.scrollIntoView({ inline: 'nearest' });
+    const fp = this.panes[saved.focus || 0]; if (fp?.active) this.activate(fp.active);
+  },
+  renderTabs() {
+    for (const p of this.panes) {
+      const bar = p.bar; bar.innerHTML = '';
+      for (const t of p.tabs) {
+        const el = h('div', { class: 'tab' + (t === p.active ? ' on' : ''), title: t.path || '' },
+          h('span', { class: 'nm' + (t.view?.dirty ? ' dirty' : ''), text: t.title() }),
+          h('button', { class: 'ib x', html: icon('x'), onclick: e => { e.stopPropagation(); this.closeTab(t); } }));
+        el.onclick = () => this.activate(t); el.onauxclick = e => { if (e.button === 1) this.closeTab(t); };
+        el.oncontextmenu = e => { e.preventDefault(); this.tabMenu(t, e.clientX, e.clientY); };
+        let lp; el.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') return; lp = setTimeout(() => this.tabMenu(t, e.clientX, e.clientY), 550); });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, () => clearTimeout(lp)));
+        bar.append(el);
+      }
+      bar.append(h('button', { class: 'ib newtab', title: 'Nova aba', html: icon('plus'), onclick: () => this.newTabEmpty(p) }));
+      bar.append(h('span', { style: { flex: 1 } }));
+      if (this.panes.length < 2) bar.append(h('button', { class: 'ib newtab', title: 'Dividir a tela: abrir outro arquivo ao lado', html: icon('columns'), onclick: e => this.splitMenu(e) }));
+      else bar.append(
+        h('button', { class: 'ib newtab', title: this.splitDir === 'row' ? 'Empilhar (um em cima do outro)' : 'Lado a lado', html: icon(this.splitDir === 'row' ? 'rows' : 'columns'), onclick: () => { this.setSplitDir(this.splitDir === 'row' ? 'col' : 'row'); this.renderTabs(); } }),
+        h('button', { class: 'ib newtab', title: 'Fechar este painel', html: icon('x'), onclick: () => this.closePane(p) }));
+      bar.querySelector('.tab.on')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  },
+  tabMenu(t, x, y) {
+    const other = this.otherPane(t.pane);
+    UI.menu(x, y, [
+      { label: 'Fechar', icon: 'x', action: () => this.closeTab(t) },
+      { label: 'Fechar as outras deste painel', action: async () => { for (const o of t.pane.tabs.filter(o => o !== t)) await this.closeTab(o, false, true); } },
+      other ? { label: 'Mover para o outro painel', icon: 'columns', action: () => this.moveTab(t, other) } : { label: 'Mover para um painel ao lado', icon: 'columns', action: () => { const np = this.ensureSplit(); this.moveTab(t, np); } },
+      t.path && !t.path.startsWith('graph:') ? { label: 'Revelar na árvore', icon: 'folder', action: () => this.reveal(t.path) } : null]);
+  },
+  splitMenu(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    UI.menu(r.left - 180, r.bottom + 4, [
+      { label: 'Abrir arquivo ao lado…', icon: 'columns', action: () => Cmd.switcher({ split: 'row' }) },
+      { label: 'Abrir arquivo embaixo…', icon: 'rows', action: () => Cmd.switcher({ split: 'col' }) },
+      this.active?.path ? { label: 'Mover esta aba para o lado', icon: 'columns', action: () => { const t = this.active; const np = this.ensureSplit('row'); this.moveTab(t, np); } } : null]);
   },
   reveal(p) { let d = dirOf(p); while (d) { this.expanded.add(d); d = dirOf(d); } this.saveExpanded(); Layout.openSide('left'); Panels.showLeft('files'); this.renderTree(); setTimeout(() => $(`.tree-item[data-path="${CSS.escape(p)}"]`)?.scrollIntoView({ block: 'center' }), 50); },
   async dailyNote() {
@@ -1646,7 +1754,7 @@ function normPath(p) { const out = []; for (const s of p.split('/')) { if (!s ||
 /* ---------- Aba ---------- */
 let TAB_SEQ = 0;
 class Tab {
-  constructor() { this.id = ++TAB_SEQ; this.el = h('div', { class: 'view' }); $('#views').append(this.el); this.hist = []; this.hi = -1; this.path = null; this.view = null; }
+  constructor(pane) { this.id = ++TAB_SEQ; this.pane = pane || App.focusPane; this.el = h('div', { class: 'view' }); this.pane.views.append(this.el); this.hist = []; this.hi = -1; this.path = null; this.view = null; }
   title() { if (!this.path) return 'Nova aba'; if (this.path.startsWith('graph:')) return this.path === 'graph:' ? 'Grafo' : 'Grafo local'; return extOf(this.path) === 'md' ? stemOf(this.path) : baseOf(this.path); }
   empty() {
     this.path = null; this.el.innerHTML = '';
@@ -2529,6 +2637,7 @@ class NoteView {
       { label: 'Vincular a um parágrafo desta nota…', icon: 'link', action: () => { if (this.mode === 'read') this.setMode('live'); this.pickBlock(); } },
       { label: 'Copiar vínculo para o parágrafo do cursor', icon: 'copy', action: () => this.copyBlockLink() },
       { label: 'Inserir modelo', icon: 'template', action: () => Templates.pick(t => this.insertAtCursor(Templates.fill(t, stemOf(this.path)))) },
+      { label: 'Abrir outro arquivo ao lado…', icon: 'columns', action: () => Cmd.switcher({ split: 'row' }) },
       { label: 'Abrir grafo local', icon: 'graph', action: () => App.open('graph:' + this.path, { newTab: true }) },
       { label: App.bookmarks.includes(this.path) ? 'Remover dos favoritos' : 'Adicionar aos favoritos', icon: 'star', action: () => App.toggleBookmark(this.path) },
       '-',
@@ -2683,7 +2792,7 @@ const Links = {
       const target = a.dataset.href, sub = a.dataset.sub;
       const p = App.resolve(target, from) || (!target && from);
       Popover.hide();
-      if (p) { const page = +(/page=(\d+)/.exec(sub || '') || [])[1] || 0; App.open(p, { newTab: e.ctrlKey || e.metaKey, sub: sub && !page ? sub : null, page }); }
+      if (p) { const page = +(/page=(\d+)/.exec(sub || '') || [])[1] || 0; App.open(p, { newTab: e.ctrlKey || e.metaKey, split: e.altKey ? 'row' : undefined, sub: sub && !page ? sub : null, page }); }
       else if (target) { const ex = App.resolve(App.safeName(target.split('/').pop()), from); if (ex) App.open(ex, { newTab: e.ctrlKey || e.metaKey }); else App.createNote(dirOf(target), target.split('/').pop(), '', { newTab: e.ctrlKey || e.metaKey }); }
     });
     let timer;
@@ -2894,7 +3003,12 @@ const Cmd = {
     this.add('daily', 'Abrir nota diária de hoje', () => App.dailyNote(), 'Mod+Shift+D');
     this.add('close', 'Fechar aba', () => App.active && App.closeTab(App.active), 'Mod+W');
     this.add('newtab', 'Nova aba', () => App.newTabEmpty(), 'Mod+T');
-    this.add('next-tab', 'Próxima aba', () => { const i = App.tabs.indexOf(App.active); App.tabs.length && App.activate(App.tabs[(i + 1) % App.tabs.length]); }, 'Ctrl+Tab');
+    this.add('next-tab', 'Próxima aba', () => { const ts = App.focusPane.tabs; const i = ts.indexOf(App.active); ts.length && App.activate(ts[(i + 1) % ts.length]); }, 'Ctrl+Tab');
+    this.add('split-open', 'Dividir a tela: abrir arquivo ao lado', () => Cmd.switcher({ split: 'row' }), 'Mod+Alt+\\');
+    this.add('split-move', 'Mover a aba atual para o outro painel', () => { const t = App.active; if (!t) return; App.moveTab(t, App.otherPane(t.pane) || App.ensureSplit('row')); });
+    this.add('split-focus', 'Alternar entre os painéis', () => { const o = App.otherPane(); if (o) { o.active ? App.activate(o.active) : App.focus(o); } }, 'Mod+Alt+ArrowRight');
+    this.add('split-close', 'Fechar a divisão da tela', () => App.panes.length > 1 && App.closePane(App.panes[1]));
+    this.add('split-dir', 'Alternar divisão: lado a lado / empilhado', () => { if (App.panes.length > 1) { App.setSplitDir(App.splitDir === 'row' ? 'col' : 'row'); App.renderTabs(); } });
     this.add('back', 'Voltar', () => App.active?.back(), 'Alt+ArrowLeft');
     this.add('fwd', 'Avançar', () => App.active?.fwd(), 'Alt+ArrowRight');
     this.add('left', 'Mostrar/ocultar barra esquerda', () => Layout.toggleSide('left'), 'Mod+\\');
@@ -2930,14 +3044,14 @@ const Cmd = {
       onPick: c => { const r = [c.id, ...recentIds.filter(x => x !== c.id)].slice(0, 8); localStorage.setItem('codex.cmdRecent', JSON.stringify(r)); c.run(); }
     });
   },
-  switcher() {
+  switcher(o = {}) {
     const files = [...App.fileMap.values()].filter(f => f.type === 'file' && !App.isHidden(f.path)).sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
     UI.picker({
-      placeholder: 'Encontrar ou criar nota…', hint: 'Enter abrir · ' + MOD + '+Enter nova aba · Shift+Enter criar nota',
+      placeholder: o.split ? 'Abrir qual arquivo ao lado?' : 'Encontrar ou criar nota…', hint: 'Enter abrir · ' + MOD + '+Enter nova aba · Alt+Enter abrir ao lado · Shift+Enter criar nota',
       items: q => files.map(f => { const d = extOf(f.path) === 'md' ? stemOf(f.path) : baseOf(f.path); return { f, d, m: fuzzy(q, d) || (q && fuzzy(q, f.path) ? { score: fuzzy(q, f.path).score - 50, idx: [] } : null) }; }).filter(x => x.m).sort((a, b) => b.m.score - a.m.score).slice(0, 80),
       render: x => icon(extOf(x.f.path) === 'md' ? 'filetext' : extOf(x.f.path) === 'pdf' ? 'pen' : 'file') + `<span class="main">${hlIdx(x.d, x.m.idx)}</span><span class="sub">${esc(dirOf(x.f.path))}</span>`,
-      onPick: (x, e) => App.open(x.f.path, { newTab: e?.ctrlKey || e?.metaKey }),
-      onEmptyEnter: (q, e) => q.trim() && App.createNote('', q.trim(), '', { newTab: e?.ctrlKey || e?.metaKey })
+      onPick: (x, e) => App.open(x.f.path, { newTab: e?.ctrlKey || e?.metaKey, split: o.split || (e?.altKey ? 'row' : undefined) }),
+      onEmptyEnter: async (q, e) => { if (!q.trim()) return; if (o.split) { App.ensureSplit(o.split); App.focus(App.panes[1]); } App.createNote('', q.trim(), '', { newTab: e?.ctrlKey || e?.metaKey }); }
     });
   }
 };
@@ -2974,7 +3088,7 @@ const Layout = {
         rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up, { once: true }); rz.addEventListener('pointercancel', up, { once: true });
       });
     });
-    $('#views').addEventListener('pointerdown', () => { if (innerWidth < 900) { this.closeSide('left'); this.closeSide('right'); } });
+    $('#panes').addEventListener('pointerdown', () => { if (innerWidth < 900) { this.closeSide('left'); this.closeSide('right'); } });
   }
 };
 
@@ -3192,7 +3306,8 @@ class PdfView {
     this.buildPages(); this.buildToolbar();
     const maxW = Math.max(...this.pages.map(p => p.w));
     const z = +localStorage.getItem('codex.pdfzoom.' + this.path);
-    if (!z && !this.scroller.clientWidth) this.needsFit = true;
+    this.autoFit = !z; if (!z && !this.scroller.clientWidth) this.needsFit = true;
+    if (!this.ro) { this.ro = new ResizeObserver(debounce(() => { if (this.autoFit && this.scroller.clientWidth && this.pages.length) { const f = this.fitWidth(); if (Math.abs(f - this.scale) > 0.02) this.setScale(f, false, true); } }, 150)); this.ro.observe(this.scroller); }
     this.setScale(z || Math.min(1.8, Math.max(0.5, (this.scroller.clientWidth - 40) / maxW)), true);
     if (this.pageIn) this.pageIn.value = 1;
     if (keepPage != null) this.gotoPage(keepPage + 1);
@@ -3210,10 +3325,11 @@ class PdfView {
     }
   }
   applyTouchAction(pg) { pg.live.style.touchAction = (this.penOnly || !DRAW_TOOLS.has(this.tool)) ? 'pan-x pan-y' : 'none'; }
-  setScale(s, initial) {
+  setScale(s, initial, auto) {
+    if (!auto && !initial) this.autoFit = false;
     s = Math.max(0.3, Math.min(5, s)); const cur = initial ? null : this.currentPage();
     const frac = cur != null ? (this.scroller.scrollTop - this.pages[cur].el.offsetTop) / this.pages[cur].el.offsetHeight : 0;
-    this.scale = s; localStorage.setItem('codex.pdfzoom.' + this.path, s);
+    this.scale = s; if (!this.autoFit) localStorage.setItem('codex.pdfzoom.' + this.path, s); else localStorage.removeItem('codex.pdfzoom.' + this.path);
     for (const pg of this.pages) { pg.el.style.width = pg.w * s + 'px'; pg.el.style.height = pg.h * s + 'px'; pg.done = 0; }
     if (cur != null) this.scroller.scrollTop = this.pages[cur].el.offsetTop + frac * this.pages[cur].el.offsetHeight;
     this.zoomLbl && (this.zoomLbl.textContent = Math.round(s * 100) + '%');
@@ -3262,7 +3378,7 @@ class PdfView {
     const g5 = h('div', { class: 'grp' },
       h('button', { class: 'ib', title: 'Diminuir zoom', html: icon('zoomout'), onclick: () => this.setScale(this.scale / 1.2) }), this.zoomLbl,
       h('button', { class: 'ib', title: 'Aumentar zoom', html: icon('zoomin'), onclick: () => this.setScale(this.scale * 1.2) }),
-      h('button', { class: 'ib', title: 'Ajustar à largura', html: icon('fit'), onclick: () => this.setScale((this.scroller.clientWidth - 40) / Math.max(...this.pages.map(p => p.w))) }));
+      h('button', { class: 'ib', title: 'Ajustar à largura (acompanha o tamanho do painel)', html: icon('fit'), onclick: () => { this.autoFit = true; this.setScale(this.fitWidth(), false, true); } }));
     if (this.pages.length && this.scale) this.zoomLbl.textContent = Math.round(this.scale * 100) + '%';
     this.pageIn = h('input', { class: 'txt', style: { width: '52px', padding: '4px 6px', textAlign: 'center' }, value: (this.currentPage() ?? 0) + 1, onchange: e => this.gotoPage(+e.target.value) });
     const g6 = h('div', { class: 'grp' }, this.pageIn, h('span', { class: 'zoomlbl', text: '/ ' + (this.pages.length || '…') }),
@@ -3412,7 +3528,7 @@ class PdfView {
     const pageNo = pgEl ? +pgEl.dataset.i + 1 : (this.currentPage() + 1);
     this.hideSelPop();
     const pop = h('div', { class: 'sel-pop' },
-      h('button', { html: '<span style="background:' + this.hlColor + ';padding:0 6px;border-radius:3px;color:#111">Marcar</span>', onmousedown: e => e.preventDefault(), onclick: () => { const cur = getSelection(); const rr = cur.rangeCount ? [...cur.getRangeAt(0).getClientRects()].filter(q => q.width > 1 && q.height > 1) : rects; this.markSelection(rr.length ? rr : rects); cur.removeAllRanges(); this.hideSelPop(); } }),
+      h('span', { class: 'sel-colors' }, ...Settings.get('hlColors').map(c => h('button', { class: 'sel-dot' + (c === this.hlColor ? ' on' : ''), title: 'Marcar com esta cor', style: { background: c }, onmousedown: e => e.preventDefault(), onclick: () => { this.hlColor = c; this.saveToolState(); const cur = getSelection(); const rr = cur.rangeCount ? [...cur.getRangeAt(0).getClientRects()].filter(q => q.width > 1 && q.height > 1) : rects; this.markSelection(rr.length ? rr : rects); cur.removeAllRanges(); this.hideSelPop(); } }))),
       h('button', { text: 'Copiar', onmousedown: e => e.preventDefault(), onclick: () => { navigator.clipboard.writeText(text); UI.toast('Copiado.'); this.hideSelPop(); } }),
       h('button', { text: 'Enviar para nota', onmousedown: e => e.preventDefault(), onclick: () => { this.hideSelPop(); this.sendToNote(text, pageNo); } }),
       h('button', { html: icon('sparkles') + ' Gemini', onmousedown: e => e.preventDefault(), onclick: () => { this.hideSelPop(); AI.focus('pdf', `Sobre este trecho do PDF (p. ${pageNo}):\n\n"${text}"\n\n`); } }));
@@ -3551,7 +3667,7 @@ class PdfView {
     });
   }
   onHide() { this.hideSelPop(); }
-  destroy() { this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
+  destroy() { this.ro?.disconnect(); this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
 }
 
 /* ===================== CADERNOS (nota → PDF, em branco, imagem → PDF) ===================== */
@@ -3952,6 +4068,7 @@ const Shell = {
         h('nav', { id: 'ribbon' },
           rb('panelleft', 'Barra lateral esquerda (' + MOD + '+\\)', () => Layout.toggleSide('left')),
           rb('search', 'Abrir arquivo rápido (' + MOD + '+O)', () => Cmd.switcher()),
+          rb('columns', 'Dividir a tela: abrir outro arquivo ao lado', () => App.panes.length > 1 ? App.closePane(App.otherPane(App.panes[0]) ) : Cmd.switcher({ split: 'row' })),
           rb('list', 'Estrutura da nota: títulos, capítulos e artigos (' + MOD + '+Shift+O)', () => Panels.openStructure()),
           rb('graph', 'Grafo (' + MOD + '+G)', () => App.open('graph:')),
           rb('calendar', 'Nota diária', () => App.dailyNote()),
@@ -3979,7 +4096,7 @@ const Shell = {
             pane('tags', h('div', { class: 'pane-scroll' })),
             pane('structure', h('div', { class: 'pane-scroll' }))),
           h('div', { class: 'resizer' })),
-        h('main', { id: 'center' }, h('div', { id: 'tabbar' }), h('div', { id: 'views' })),
+        h('main', { id: 'center' }, h('div', { id: 'panes' })),
         h('aside', { id: 'right' },
           h('div', { class: 'side-tabs' }, tab('right', 'backlinks', 'link', 'Backlinks'), tab('right', 'outgoing', 'arrow', 'Links de saída'), tab('right', 'outline', 'list', 'Sumário'), tab('right', 'ai', 'sparkles', 'Gemini'),
             h('span', { style: { flex: 1 } }), h('button', { class: 'ib', title: 'Fechar', html: icon('x'), onclick: () => Layout.closeSide('right') })),
@@ -3998,7 +4115,7 @@ const Shell = {
     catch (e) { UI.error(e); } finally { Loading.hide(); }
   },
   async start() {
-    Settings.load(); Settings.apply(); this.build(); Layout.init(); Cmd.init(); Keys.bind(); Links.bind(); CommentPop.bind(); App.bindTree();
+    Settings.load(); Settings.apply(); this.build(); App.initPanes(); Layout.init(); Cmd.init(); Keys.bind(); Links.bind(); CommentPop.bind(); App.bindTree();
     $('#rb-theme').innerHTML = icon(document.documentElement.dataset.theme === 'dark' ? 'moon' : 'sun');
     Panels.showLeft('files'); Panels.showRight(localStorage.getItem('codex.rightPane') || 'backlinks');
     $$('#right .side-tab').forEach(t => t.addEventListener('click', () => localStorage.setItem('codex.rightPane', t.dataset.k)));

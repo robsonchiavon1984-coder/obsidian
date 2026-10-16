@@ -57,11 +57,21 @@ No topo da nota há dois botões:
 
 Clicar num link abre a nota de destino. Para editar o link, leve o cursor até ele com as setas do teclado.
 
+## Tela dividida
+
+Dá para trabalhar com dois arquivos ao mesmo tempo, em qualquer combinação: duas notas, dois PDFs, ou uma nota e um PDF. Cada lado tem as próprias abas.
+
+- Para abrir: use o ícone de colunas na faixa de ícones à esquerda ou no fim da barra de abas, a opção "Abrir ao lado" no menu de um arquivo na árvore, ou Alt+clique num arquivo ou link. No teclado, Ctrl/⌘+Alt+\\.
+- Para mover uma aba de um lado para o outro: clique com o botão direito na aba (no iPad, mantenha o dedo pressionado) e escolha "Mover para o outro painel".
+- A divisória do meio pode ser arrastada para ajustar a largura. O botão no fim da barra de abas alterna entre lado a lado e um em cima do outro, que funciona melhor com o iPad na vertical.
+- O painel em uso tem a aba destacada com uma linha colorida. A estrutura, os backlinks e o Gemini acompanham esse painel.
+- Os PDFs se ajustam sozinhos à largura do painel, até você mudar o zoom manualmente.
+
 ## Códigos e leis
 
-Quando a nota tem pelo menos três artigos ("Art. 1º", "Art. 2º"…), o Códex a trata como lei. Funciona bem com o texto copiado do Planalto.
+Quando a nota tem artigos ("Art. 1º", "Art. 2º"…), o Códex a trata como lei. Funciona bem com o texto copiado do Planalto.
 
-- O painel Sumário, na barra direita, mostra a árvore Parte › Livro › Título › Subtítulo › Capítulo › Seção › Subseção › Artigo. Clique para ir ao ponto. O campo de filtro aceita, por exemplo, "art 5" ou "capítulo II".
+- A árvore da estrutura abre pelo botão de lista no topo da nota, pela aba Estrutura da barra esquerda ou por Ctrl/⌘+Shift+O. Ela mostra Parte › Livro › Título › Subtítulo › Capítulo › Seção › Subseção › Artigo. Clique para ir ao ponto. O campo de filtro aceita, por exemplo, "art 5" ou "capítulo II".
 - Linhas de Título, Capítulo e semelhantes aparecem centralizadas. Os números dos dispositivos (Art., §, incisos, alíneas) aparecem em negrito.
 - Comentários por dispositivo: ponha o cursor no artigo, parágrafo, inciso ou alínea e clique no botão de comentário da barra de formatação, ou use Ctrl/⌘+Shift+M.
   - O comentário é salvo como uma nota comum em `Comentários/<nome da lei>/Art. 5º, § 1º.md`. Pode ser longo e ter links, tags e formatação.
