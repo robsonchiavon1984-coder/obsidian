@@ -501,7 +501,7 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .ol-struct .ol-text{font-weight:600}.ol-l1 .ol-text,.ol-l2 .ol-text{color:var(--accent2)}
 .ol-art .ol-text{color:var(--muted)}
 .ol-h .ol-text{font-weight:500}
-#pane-outline .search-box{padding:6px 8px}
+#pane-outline .search-box,#pane-structure .search-box{padding:6px 8px}
 
 </style>
 </head>
@@ -1845,8 +1845,8 @@ const Lex = {
     [/^T[ÍI]TULO\s+([IVXLCDM]+(-[A-Z])?|[ÚU]NICO)\b/i, 3, 'Título'], [/^SUBT[ÍI]TULO\s+([IVXLCDM]+|[ÚU]NICO)\b/i, 4, 'Subtítulo'],
     [/^CAP[ÍI]TULO\s+([IVXLCDM]+(-[A-Z])?|[ÚU]NICO)\b/i, 5, 'Capítulo'], [/^SE[ÇC][ÃA]O\s+([IVXLCDM]+(-[A-Z])?|[ÚU]NICA)\b/i, 6, 'Seção'],
     [/^SUBSE[ÇC][ÃA]O\s+([IVXLCDM]+|[ÚU]NICA)\b/i, 7, 'Subseção'],
-    [/^(ATO\s+DAS\s+)?DISPOSI[ÇC][ÕO]ES\s+(CONSTITUCIONAIS\s+)?(GERAIS|FINAIS|TRANSIT[ÓO]RIAS|PRELIMINARES|FINAIS\s+E\s+TRANSIT[ÓO]RIAS)\b/i, 3, 'Disposições'],
-    [/^PRE[ÂA]MBULO\s*$/i, 3, 'Preâmbulo']
+    [/^(ATO\s+DAS\s+)?DISPOSI[ÇC][ÕO]ES\s+(CONSTITUCIONAIS\s+)?(GERAIS|FINAIS|TRANSIT[ÓO]RIAS|PRELIMINARES|FINAIS\s+E\s+TRANSIT[ÓO]RIAS)\b/, 3, 'Disposições', true],
+    [/^PRE[ÂA]MBULO\s*$/i, 3, 'Preâmbulo', true]
   ],
   ROMAN: /^(?=[IVXLCDM])M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/,
   /* tira marcações Markdown do início da linha; devolve o deslocamento */
@@ -1857,9 +1857,9 @@ const Lex = {
     const s = { art: null, par: null, inc: null, pendingRubric: false };
     return line => {
       const { off, t } = Lex.strip(line); if (!t.trim()) return null;
-      for (const [re, level, kind] of Lex.STRUCT) if (re.test(t)) { s.pendingRubric = true; return { kind: 'struct', level, text: t.replace(/[*_]+/g, '').trim(), name: kind }; }
+      for (const [re, level, kind, loose] of Lex.STRUCT) if (re.test(t) && !(loose && s.pendingRubric)) { s.pendingRubric = true; return { kind: 'struct', level, text: t.replace(/[*_]+/g, '').trim(), name: kind }; }
       let m;
-      if ((m = /^(Art\.?\s*(\d{1,4}(?:\.\d{3})*)\s*(?:º|°|o(?=[\s.]))?(?:\s*-\s*([A-Z]{1,2}))?\.?)(?=\s|$|\*)/.exec(t))) {
+      if ((m = /^(Art(?:igo)?\.?\s*(\d{1,4}(?:\.\d{3})*)\s*\.?\s*(?:º|°|ª|o(?=[\s.]))?(?:\s*-\s*([A-Z]{1,2}))?\.?)(?=\s|$|\*)/.exec(t))) {
         s.art = 'Art. ' + Lex.ord(m[2]) + (m[3] ? '-' + m[3] : ''); s.par = s.inc = null; s.pendingRubric = false;
         return { kind: 'art', label: s.art, start: off, end: off + m[1].length, text: t };
       }
@@ -1879,7 +1879,7 @@ const Lex = {
       if (/^\s*(```|~~~)/.test(lines[i])) { code = !code; continue; } if (code) continue;
       const it = feed(lines[i]); if (it) { items[i] = it; if (it.kind === 'art') arts++; }
     }
-    const r = { items, legal: arts >= 3 }; Lex.strCache = { s: text, r }; return r;
+    const structs = items.filter(x => x?.kind === 'struct').length; const r = { items, legal: arts >= 1 || structs >= 2 }; Lex.strCache = { s: text, r }; return r;
   },
   /* caminho do comentário de um dispositivo */
   folder() { return Settings.get('commentsFolder') || 'Comentários'; },
@@ -2388,6 +2388,7 @@ class NoteView {
   async mount() {
     this.text = await App.readNote(this.path);
     this.head = viewHead(this.tab, this.path, [
+      h('button', { class: 'ib', title: 'Estrutura da nota (árvore de títulos, capítulos e artigos)', html: icon('list'), onclick: () => Panels.left === 'structure' && !$('#left').classList.contains('collapsed') ? Layout.closeSide('left') : Panels.openStructure() }),
       this.srcBtn = h('button', { class: 'ib', title: 'Mostrar os códigos Markdown (modo código-fonte)', html: icon('code'), onclick: () => this.setMode(this.mode === 'source' ? 'live' : 'source') }),
       this.readBtn = h('button', { class: 'ib', title: 'Modo leitura, sem edição (' + MOD + '+E)', html: icon('book'), onclick: () => this.setMode(this.mode === 'read' ? 'live' : 'read') }),
       h('button', { class: 'ib', title: 'Perguntar ao Gemini sobre esta nota', html: icon('sparkles'), onclick: () => AI.focus() }),
@@ -2444,7 +2445,7 @@ class NoteView {
       this.text = u.state.doc.toString();
       if (!this.dirty) { this.dirty = true; App.renderTabs(); }
       this.saveSoon(); this.statusSoon();
-      if (Panels.right === 'outline') (this.outlineSoon ||= debounce(() => App.active?.view === this && Panels.renderOutline(), 900))();
+      if (Panels.right === 'outline' || Panels.left === 'structure') (this.outlineSoon ||= debounce(() => App.active?.view === this && Panels.renderOutline(), 900))();
     }
     if (u.docChanged || u.selectionSet) { const m = u.state.selection.main; AI.selection = m.empty ? '' : u.state.sliceDoc(m.from, m.to); if (u.view.hasFocus) this.suggest(); }
     if (u.focusChanged && !u.view.hasFocus) setTimeout(() => { if (!this.cm.hasFocus) Suggest.hide(); }, 150);
@@ -2719,7 +2720,7 @@ const Panels = {
   refreshSoon: debounce(() => Panels.refresh(), 400),
   refresh() {
     if (!App.vault) return;
-    if (this.left === 'tags') this.renderTags(); if (this.left === 'bookmarks') this.renderBookmarks();
+    if (this.left === 'tags') this.renderTags(); if (this.left === 'bookmarks') this.renderBookmarks(); if (this.left === 'structure') this.renderOutline();
     if (this.right === 'backlinks') this.renderBacklinks(); if (this.right === 'outgoing') this.renderOutgoing(); if (this.right === 'outline') this.renderOutline();
     if (this.right === 'ai') AI.renderCtx();
     Status.update();
@@ -2775,8 +2776,13 @@ const Panels = {
     if (!seen.size) box.append(h('div', { class: 'empty', text: 'Esta nota não tem links.' }));
   },
   outlineOpen: new Map(),
+  openStructure() { Layout.openSide('left'); Panels.showLeft('structure'); },
   renderOutline() {
-    const pane = $('#pane-outline'); const box = pane.querySelector('.pane-scroll');
+    if (this.right === 'outline' && !$('#right').classList.contains('collapsed')) this.renderOutlineIn($('#pane-outline'));
+    if (this.left === 'structure' && !$('#left').classList.contains('collapsed')) this.renderOutlineIn($('#pane-structure'));
+  },
+  renderOutlineIn(pane) {
+    const box = pane.querySelector('.pane-scroll');
     let filt = pane.querySelector('.ol-filter');
     if (!filt) {
       filt = h('input', { class: 'txt ol-filter', placeholder: 'Filtrar (ex.: art 5, capítulo II)…', oninput: debounce(() => this.renderOutline(), 200) });
@@ -2900,7 +2906,7 @@ const Cmd = {
     this.add('block-link', 'Vincular a um parágrafo desta nota', () => nv() && (nv().mode === 'read' && nv().setMode('edit'), nv().pickBlock()), 'Mod+Shift+K');
     this.add('copy-block', 'Copiar vínculo para o parágrafo do cursor', () => nv() && nv().copyBlockLink(), 'Mod+Shift+C');
     this.add('comment', 'Comentar o dispositivo do cursor (artigo, parágrafo, inciso…)', () => nv() && (nv().mode === 'read' && nv().setMode('live'), commentAtCursor(nv())), 'Mod+Shift+M');
-    this.add('outline', 'Mostrar a estrutura da nota (sumário)', () => { Layout.openSide('right'); Panels.showRight('outline'); });
+    this.add('outline', 'Mostrar a estrutura da nota (árvore)', () => Panels.openStructure(), 'Mod+Shift+O');
     this.add('folder', 'Criar nova pasta', () => App.createFolder(''));
     this.add('rename', 'Renomear arquivo atual', () => App.active?.path && !App.active.path.startsWith('graph:') && App.promptRename(App.active.path), 'F2');
     this.add('move', 'Mover arquivo atual', () => App.active?.path && !App.active.path.startsWith('graph:') && App.promptMove(App.active.path));
@@ -3946,6 +3952,7 @@ const Shell = {
         h('nav', { id: 'ribbon' },
           rb('panelleft', 'Barra lateral esquerda (' + MOD + '+\\)', () => Layout.toggleSide('left')),
           rb('search', 'Abrir arquivo rápido (' + MOD + '+O)', () => Cmd.switcher()),
+          rb('list', 'Estrutura da nota: títulos, capítulos e artigos (' + MOD + '+Shift+O)', () => Panels.openStructure()),
           rb('graph', 'Grafo (' + MOD + '+G)', () => App.open('graph:')),
           rb('calendar', 'Nota diária', () => App.dailyNote()),
           rb('book', 'Novo caderno para escrever à mão', () => Notebook.blank(App.active?.path && !App.active.path.startsWith('graph:') ? dirOf(App.active.path) : '')),
@@ -3962,14 +3969,15 @@ const Shell = {
             h('button', { class: 'ib', title: 'Nova pasta', html: icon('folderplus'), onclick: () => App.createFolder('') }),
             h('button', { class: 'ib', title: 'Importar arquivos', html: icon('upload'), onclick: () => App.importFiles('') }),
             h('button', { class: 'ib', title: 'Recolher pastas', html: icon('chevu'), onclick: () => { App.expanded.clear(); App.saveExpanded(); App.renderTree(); } })),
-          h('div', { class: 'side-tabs' }, tab('left', 'files', 'folder', 'Arquivos'), tab('left', 'search', 'search', 'Busca'), tab('left', 'bookmarks', 'star', 'Favoritos'), tab('left', 'tags', 'hash', 'Tags')),
+          h('div', { class: 'side-tabs' }, tab('left', 'files', 'folder', 'Arquivos'), tab('left', 'search', 'search', 'Busca'), tab('left', 'bookmarks', 'star', 'Favoritos'), tab('left', 'tags', 'hash', 'Tags'), tab('left', 'structure', 'list', 'Estrutura da nota')),
           h('div', { class: 'side-body' },
             pane('files', h('div', { class: 'pane-scroll', id: 'tree' })),
             pane('search', h('div', { class: 'search-box' }, h('input', { class: 'txt', id: 'search-in', placeholder: 'Buscar…  (tag:#x  path:pasta  file:nome  "frase")', oninput: () => Search.exec() }),
               h('div', { class: 'search-opts' }, h('label', {}, h('input', { type: 'checkbox', id: 'search-case', onchange: () => Search.exec() }), 'Diferenciar maiúsculas'), h('label', {}, h('input', { type: 'checkbox', id: 'search-re', onchange: () => Search.exec() }), 'Regex'))),
               h('div', { class: 'pane-scroll', id: 'search-res' })),
             pane('bookmarks', h('div', { class: 'pane-scroll' })),
-            pane('tags', h('div', { class: 'pane-scroll' }))),
+            pane('tags', h('div', { class: 'pane-scroll' })),
+            pane('structure', h('div', { class: 'pane-scroll' }))),
           h('div', { class: 'resizer' })),
         h('main', { id: 'center' }, h('div', { id: 'tabbar' }), h('div', { id: 'views' })),
         h('aside', { id: 'right' },
@@ -3980,7 +3988,7 @@ const Shell = {
           h('div', { class: 'resizer' }))),
       h('div', { id: 'statusbar' }, h('span', { class: 'l', id: 'st-vault' }), h('span', { id: 'st-bl' }), h('span', { id: 'st-words' }), h('span', { id: 'st-save', text: 'Salvo' })),
       h('div', { id: 'welcome', class: 'hidden' }), h('div', { id: 'toasts' }));
-    $$('#left .side-tab').forEach(t => t.title && (t.innerHTML = icon({ files: 'folder', search: 'search', bookmarks: 'star', tags: 'hash' }[t.dataset.k])));
+    $$('#left .side-tab').forEach(t => t.title && (t.innerHTML = icon({ files: 'folder', search: 'search', bookmarks: 'star', tags: 'hash', structure: 'list' }[t.dataset.k])));
   },
   toggleTheme() { const dark = document.documentElement.dataset.theme === 'dark'; Settings.set('theme', dark ? 'light' : 'dark'); Settings.apply(); $('#rb-theme').innerHTML = icon(dark ? 'sun' : 'moon'); App.tabs.forEach(t => t.view instanceof GraphView && t.view.draw()); },
   async reloadVault() {
