@@ -407,6 +407,12 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 #pane-ai .pane-head .title{flex:none;margin-right:6px}
 .ai-model-box{min-width:0;flex:1 1 auto;display:flex}
 .ai-model{max-width:100%;padding:3px 6px;font-size:12px;height:28px}
+.ed-hl .hl-l{min-height:1em}
+.m-bid{color:var(--faint);opacity:.6;font-size:inherit}
+@keyframes flashbg{0%,30%{background:var(--accent-bg);box-shadow:0 0 0 4px var(--accent-bg)}100%{background:transparent;box-shadow:none}}
+.flash{animation:flashbg 1.8s ease-out;border-radius:4px}
+.md a.block-link{border-bottom:1px dotted var(--link)}
+.md a.block-link:hover{text-decoration:none;background:var(--accent-bg)}
 
 </style>
 </head>
@@ -913,7 +919,7 @@ function parseNote(text) {
     while ((m = WIKI_RE.exec(ln))) { const s = splitLink(m[2]); links.push({ ...s, embed: !!m[1], line: i + fmLines }); }
     const md = /\[[^\]]*\]\((?!https?:|mailto:|#)([^)\s]+\.md)\)/g; while ((m = md.exec(ln))) links.push({ target: decodeURIComponent(m[1]), sub: '', alias: null, embed: false, line: i + fmLines });
     TAG_RE.lastIndex = 0; while ((m = TAG_RE.exec(ln))) tags.add(m[2]);
-    const hm = /^(#{1,6})\s+(.+?)\s*#*$/.exec(ln); if (hm) headings.push({ level: hm[1].length, text: hm[2], line: i + fmLines });
+    const hm = /^(#{1,6})\s+(.+?)\s*#*$/.exec(ln); if (hm) headings.push({ level: hm[1].length, text: hm[2].replace(/\s\^[A-Za-z0-9-]+\s*$/, ''), line: i + fmLines });
   });
   if (props) { let pt = props.tags || props.tag || props.Tags; if (pt) (Array.isArray(pt) ? pt : String(pt).split(/[,\s]+/)).forEach(t => t && tags.add(t.replace(/^#/, ''))); }
   return { links, tags, headings, props };
@@ -931,7 +937,7 @@ function setupMarked() {
       const s = splitLink(t.inner);
       if (t.embed) return `<span class="embed-ph" data-target="${esc(s.target)}" data-sub="${esc(s.sub)}" data-alias="${esc(s.alias ?? '')}"></span>`;
       const disp = s.alias ?? (s.target ? s.target.split('/').pop().replace(/\.md$/, '') + (s.sub ? ' > ' + s.sub.replace(/^\^/, '') : '') : s.sub);
-      return `<a class="internal-link" data-href="${esc(s.target)}" data-sub="${esc(s.sub)}">${esc(disp)}</a>`;
+      return `<a class="internal-link" data-href="${esc(s.target)}" data-sub="${esc(s.sub)}"${s.alias != null ? ' data-al="1"' : ''}>${esc(disp)}</a>`;
     }
   };
   const mark = {
@@ -951,12 +957,51 @@ function setupMarked() {
 
 const CALLOUT_TITLES = { note: 'Nota', info: 'Informação', tip: 'Dica', hint: 'Dica', important: 'Importante', warning: 'Atenção', caution: 'Cuidado', attention: 'Atenção', danger: 'Perigo', error: 'Erro', question: 'Pergunta', faq: 'Pergunta', help: 'Ajuda', quote: 'Citação', cite: 'Citação', example: 'Exemplo', success: 'Sucesso', check: 'OK', done: 'Feito', abstract: 'Resumo', summary: 'Resumo', tldr: 'Resumo', todo: 'A fazer', bug: 'Erro', failure: 'Falha', fail: 'Falha', missing: 'Faltando' };
 
+/* ---------- referências a parágrafos (blocos ^id, como no Obsidian) ---------- */
+const BID_RE = /\s\^([A-Za-z0-9-]+)\s*$/;
+const Blocks = {
+  list(text) {
+    const out = []; let code = false, fm = false;
+    text.split('\n').forEach((l, i) => {
+      if (i === 0 && l === '---') { fm = true; return; } if (fm) { if (l === '---') fm = false; return; }
+      if (/^\s*(```|~~~)/.test(l)) { code = !code; return; } if (code || !l.trim() || /^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) return;
+      const m = BID_RE.exec(l); const body = m ? l.slice(0, m.index) : l;
+      out.push({ line: i, id: m ? m[1] : null, heading: /^#{1,6}\s/.test(l), text: Blocks.plain(body) });
+    });
+    return out;
+  },
+  plain(l) { return l.replace(/^\s*(#{1,6}\s+|>\s*(\[![^\]]+\][+-]?\s*)?|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+)/, '').replace(/!?\[\[([^\]|]*\|)?([^\]]*)\]\]/g, '$2').replace(/<[^>]+>/g, '').replace(/[*_=~`]/g, '').trim(); },
+  /* busca por palavras (sem acentos), mais rigorosa que a busca aproximada */
+  match(q, list) {
+    const words = norm(q).split(/\s+/).filter(Boolean);
+    if (!words.length) return list.slice();
+    const sc = b => { const t = norm(b.text); if (!words.every(w => t.includes(w))) return null; return (b.heading ? 50 : 0) + (t.startsWith(words[0]) ? 30 : 0) - t.indexOf(words[0]) * 0.01; };
+    return list.map(b => [b, sc(b)]).filter(x => x[1] !== null).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  },
+  newId(text) { let id; do { id = Math.random().toString(36).slice(2, 8); } while (text.includes('^' + id)); return id; },
+  find(text, id) { const re = new RegExp('\\s\\^' + id.replace(/[^\w-]/g, '') + '\\s*$'); const lines = text.split('\n'); const i = lines.findIndex(l => re.test(l)); return i < 0 ? null : { line: i, text: Blocks.plain(lines[i].replace(BID_RE, '')) }; },
+  /* garante um ^id no fim da linha; devolve o id. Edita a nota aberta (preservando o cursor) ou grava o arquivo. */
+  async ensure(path, line) {
+    const tabV = App.tabs.map(t => t.view).find(v => v instanceof NoteView && v.path === path);
+    const text = tabV ? tabV.ta.value : await App.readNote(path); const lines = text.split('\n');
+    const m = BID_RE.exec(lines[line] || ''); if (m) return m[1];
+    const id = Blocks.newId(text); const add = ' ^' + id;
+    if (tabV) {
+      const ta = tabV.ta; let end = 0; for (let i = 0; i <= line; i++) end += lines[i].length + (i < line ? 1 : 0);
+      const s0 = ta.selectionStart, e0 = ta.selectionEnd; insertText(ta, end, end, add);
+      ta.setSelectionRange(s0 > end ? s0 + add.length : s0, e0 > end ? e0 + add.length : e0);
+    } else { lines[line] += add; await App.writeNote(path, lines.join('\n')); }
+    return id;
+  }
+};
+
 const Renderer = {
   render(text, path, opts = {}) {
     setupMarked();
     const root = h('div', { class: 'md' });
     let { props, body } = splitFrontmatter(text);
     body = body.replace(/%%[\s\S]*?%%/g, '');
+    { let code = false; body = body.split('\n').map(l => { if (/^\s*(```|~~~)/.test(l)) code = !code; return code ? l : l.replace(BID_RE, (m, id) => ` <span class="blockid" data-block="${id}"></span>`); }).join('\n'); }
     if (opts.section) body = Renderer.section(body, opts.section);
     if (opts.inlineTitle && !new RegExp('^\\s*#\\s+' + stemOf(path).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(\\n|$)').test(body)) root.append(h('div', { class: 'inline-title', text: stemOf(path) }));
     if (props && Object.keys(props).length && !opts.noProps) {
@@ -964,9 +1009,9 @@ const Renderer = {
       for (const [k, v] of Object.entries(props)) p.append(h('div', {}, h('b', { text: k }), h('span', { text: Array.isArray(v) ? v.join(', ') : v })));
       root.append(p);
     }
-    const html = DOMPurify.sanitize(marked.parse(body), { ADD_ATTR: ['data-href', 'data-sub', 'data-target', 'data-alias', 'data-tag', 'target'], FORBID_TAGS: ['style', 'form'] });
+    const html = DOMPurify.sanitize(marked.parse(body), { ADD_ATTR: ['data-href', 'data-al', 'data-sub', 'data-target', 'data-alias', 'data-tag', 'data-block', 'target'], FORBID_TAGS: ['style', 'form'] });
     const c = h('div', { html }); while (c.firstChild) root.append(c.firstChild);
-    Renderer.post(root, path, opts);
+    Renderer.post(root, path, { ...opts, srcText: text });
     return root;
   },
   section(body, sub) {
@@ -989,7 +1034,18 @@ const Renderer = {
       if (/^[a-z][a-z0-9+.-]*:/i.test(href)) { a.target = '_blank'; a.rel = 'noopener'; }
       else if (!href.startsWith('#')) { a.classList.add('internal-link'); a.dataset.href = decodeURIComponent(href).replace(/\.md$/, ''); a.removeAttribute('href'); }
     });
-    root.querySelectorAll('a.internal-link').forEach(a => { if (a.dataset.href && !App.resolve(a.dataset.href, path)) a.classList.add('unresolved'); a.setAttribute('href', '#'); });
+    root.querySelectorAll('span.blockid').forEach(sp => { const b = sp.closest('p,li,blockquote,h1,h2,h3,h4,h5,h6,td,.callout') || sp.parentElement; b.dataset.blockId = sp.dataset.block; });
+    root.querySelectorAll('a.internal-link').forEach(a => {
+      const tgt = a.dataset.href; const r = tgt ? App.resolve(tgt, path) : path;
+      if (tgt && !r) a.classList.add('unresolved');
+      const sub = a.dataset.sub || '';
+      if (r && sub.startsWith('^') && !a.dataset.al) {
+        const src = r === path && opts.srcText != null ? opts.srcText : App.notes.get(r)?.text; const b = src && Blocks.find(src, sub.slice(1));
+        if (b) { a.textContent = (tgt && r !== path ? stemOf(r) + ' › ' : '↪ ') + (b.text.length > 70 ? b.text.slice(0, 68) + '…' : b.text); a.title = b.text; a.classList.add('block-link'); }
+        else a.classList.add('unresolved');
+      }
+      a.setAttribute('href', '#');
+    });
     root.querySelectorAll('a.tag').forEach(a => a.setAttribute('href', '#'));
     /* imagens: YouTube, caminhos relativos */
     root.querySelectorAll('img').forEach(img => {
@@ -1110,9 +1166,10 @@ const App = {
     }
   },
   indexNote(path, text, mtime, quiet) {
-    const meta = parseNote(text);
-    this.notes.set(path, { path, text, mtime: mtime || Date.now(), ...meta });
-    if (!quiet) Panels.refreshSoon();
+    const meta = parseNote(text); const prev = this.notes.get(path);
+    const sig = JSON.stringify([meta.links.map(l => [l.target, l.sub, l.embed, l.line]), [...meta.tags], meta.headings]);
+    this.notes.set(path, { path, text, mtime: mtime || Date.now(), sig, ...meta });
+    if (!quiet && (!prev || prev.sig !== sig)) Panels.refreshSoon();
   },
   addFile(path, type = 'file') {
     const parts = path.split('/'); let cur = '';
@@ -1575,7 +1632,8 @@ class FormatBar {
       this.btn(icon('alignright'), 'Alinhar este parágrafo à direita', ta => Fmt.align(ta, 'right')),
       this.btn(icon('alignjustify'), 'Justificar este parágrafo', ta => Fmt.align(ta, 'justify')),
       this.sep(),
-      this.btn(icon('link'), 'Link interno [[ ]]', ta => { Fmt.wrap(ta, '[[', ']]'); this.v.suggest(); }),
+      this.btn(icon('link'), 'Link para outra nota [[ ]]', ta => { Fmt.wrap(ta, '[[', ']]'); this.v.suggest(); }),
+      this.btn('<span class="ft" style="font-size:18px">¶</span>', 'Vincular a um parágrafo ou título desta nota (' + MOD + '+Shift+K)', () => this.v.pickBlock()),
       this.btn(icon('clearfmt'), 'Limpar formatação do trecho', ta => Fmt.clear(ta)));
   }
 }
@@ -1637,21 +1695,36 @@ const MDHL = {
     s = s.replace(/(^|[\s(,;])(#(?=[\p{L}\p{N}_\-\/]*[\p{L}_\-\/])[\p{L}\p{N}_\-\/]+)/gu, '$1<span class="m-tag">$2</span>');
     return s;
   },
-  html(text) {
-    const lines = text.split('\n'); let code = false, fm = false; const out = [];
-    lines.forEach((l, i) => {
-      if (i === 0 && l === '---') { fm = true; out.push('<span class="m-faint">---</span>'); return; }
-      if (fm) { if (l === '---') fm = false; out.push('<span class="m-fm">' + esc(l) + '</span>'); return; }
-      if (/^\s*(```|~~~)/.test(l)) { code = !code; out.push('<span class="m-faint">' + esc(l) + '</span>'); return; }
-      if (code) { out.push('<span class="m-codeblk">' + esc(l) + '</span>'); return; }
-      let m;
-      if ((m = /^(#{1,6})(\s+)(.*)$/.exec(l))) { out.push(`<span class="m-faint">${m[1]}</span>${m[2]}<span class="m-h m-h${m[1].length}">${this.inline(m[3])}</span>`); return; }
-      if ((m = /^(\s*(?:>\s*)+)(\[![^\]]+\][+-]?)?(.*)$/.exec(l))) { out.push(`<span class="m-quote">${esc(m[1])}</span>${m[2] ? '<span class="m-callout">' + esc(m[2]) + '</span>' : ''}${this.inline(m[3])}`); return; }
-      if ((m = /^(\s*)([-*+]|\d+[.)])(\s+)(\[[ xX]\]\s)?(.*)$/.exec(l))) { out.push(`${m[1]}<span class="m-list">${esc(m[2])}</span>${m[3]}${m[4] ? '<span class="m-list">' + esc(m[4]) + '</span>' : ''}${m[4] && /x/i.test(m[4]) ? '<span class="m-done">' + this.inline(m[5]) + '</span>' : this.inline(m[5])}`); return; }
-      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { out.push('<span class="m-faint">' + esc(l) + '</span>'); return; }
-      out.push(this.inline(l).replace(/%%.*?%%/g, x => '<span class="m-faint">' + x + '</span>'));
-    });
-    return out.join('\n') + '\n ';
+  /* realça uma linha; st = estado de bloco (fm = frontmatter, code = bloco de código) */
+  line(l, i, st) {
+    if (i === 0 && l === '---') { st.fm = true; return '<span class="m-faint">---</span>'; }
+    if (st.fm) { if (l === '---') st.fm = false; return '<span class="m-fm">' + esc(l) + '</span>'; }
+    if (/^\s*(```|~~~)/.test(l)) { st.code = !st.code; return '<span class="m-faint">' + esc(l) + '</span>'; }
+    if (st.code) return '<span class="m-codeblk">' + esc(l) + '</span>';
+    let m, bid = '';
+    const bm = /(\s\^[\w-]+)\s*$/.exec(l); if (bm) { bid = '<span class="m-bid">' + esc(l.slice(bm.index)) + '</span>'; l = l.slice(0, bm.index); }
+    if ((m = /^(#{1,6})(\s+)(.*)$/.exec(l))) return `<span class="m-faint">${m[1]}</span>${m[2]}<span class="m-h m-h${m[1].length}">${this.inline(m[3])}</span>` + bid;
+    if ((m = /^(\s*(?:>\s*)+)(\[![^\]]+\][+-]?)?(.*)$/.exec(l))) return `<span class="m-quote">${esc(m[1])}</span>${m[2] ? '<span class="m-callout">' + esc(m[2]) + '</span>' : ''}${this.inline(m[3])}` + bid;
+    if ((m = /^(\s*)([-*+]|\d+[.)])(\s+)(\[[ xX]\]\s)?(.*)$/.exec(l))) return `${m[1]}<span class="m-list">${esc(m[2])}</span>${m[3]}${m[4] ? '<span class="m-list">' + esc(m[4]) + '</span>' : ''}${m[4] && /x/i.test(m[4]) ? '<span class="m-done">' + this.inline(m[5]) + '</span>' : this.inline(m[5])}` + bid;
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) return '<span class="m-faint">' + esc(l) + '</span>';
+    return this.inline(l).replace(/%%.*?%%/g, x => '<span class="m-faint">' + x + '</span>') + bid;
+  },
+  /* atualização incremental: só as linhas alteradas são redesenhadas */
+  paint(box, text, cache) {
+    const lines = text.split('\n'); const st = { fm: false, code: false }; const keys = new Array(lines.length);
+    for (let i = 0; i < lines.length; i++) { const k0 = (st.fm ? 'f' : st.code ? 'c' : 'n'); keys[i] = k0 + lines[i];
+      if (i === 0 && lines[i] === '---') st.fm = true; else if (st.fm) { if (lines[i] === '---') st.fm = false; } else if (/^\s*(```|~~~)/.test(lines[i])) st.code = !st.code; }
+    const old = cache.keys || []; let p = 0; const n = Math.min(old.length, keys.length);
+    while (p < n && old[p] === keys[p]) p++;
+    let so = old.length - 1, sn = keys.length - 1; while (so >= p && sn >= p && old[so] === keys[sn]) { so--; sn--; }
+    const kids = box.children; const ref = kids[so + 1] || null;
+    for (let i = so; i >= p; i--) kids[i].remove();
+    const frag = document.createDocumentFragment();
+    for (let i = p; i <= sn; i++) {
+      const st2 = { fm: keys[i][0] === 'f', code: keys[i][0] === 'c' };
+      const d = document.createElement('div'); d.className = 'hl-l'; const html = this.line(lines[i], i, st2); d.innerHTML = html || '<br>'; frag.append(d);
+    }
+    box.insertBefore(frag, ref); cache.keys = keys;
   }
 };
 
@@ -1686,7 +1759,7 @@ class NoteView {
     this.head.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     if (this.fbar) { this.fbar.el.dataset.read = m === 'read' ? '1' : '0'; this.fbar.el.classList.toggle('hidden', m === 'read' || !Settings.get('showFormatBar')); }
     if (m !== 'edit') this.renderReader();
-    if (m !== 'read') { requestAnimationFrame(() => this.grow()); if (!initial) this.ta.focus(); }
+    if (m !== 'read') { requestAnimationFrame(() => this.grow(true)); if (!initial) this.ta.focus(); }
   }
   toggleMode() { this.setMode(this.mode === 'read' ? 'edit' : 'read'); }
   renderReader() {
@@ -1694,14 +1767,20 @@ class NoteView {
     this.reader.append(Renderer.render(this.text, this.path, { inlineTitle: this.mode === 'read' }));
     this.reader.scrollTop = st;
   }
-  grow() { const sc = this.edWrap.scrollTop; this.ta.style.height = 'auto'; this.ta.style.height = (this.ta.scrollHeight + 2) + 'px'; this.edWrap.scrollTop = sc; }
+  grow(full) {
+    const ta = this.ta;
+    if (full) { const sc = this.edWrap.scrollTop; ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; this.edWrap.scrollTop = sc; return; }
+    if (ta.scrollHeight > ta.clientHeight) ta.style.height = (ta.scrollHeight + 2) + 'px';
+    this.shrinkSoon ||= debounce(() => this.grow(true), 1200); this.shrinkSoon();
+  }
   bind() {
-    this.saveSoon = debounce(() => this.save(), 700);
-    this.readerSoon = debounce(() => this.mode === 'split' && this.renderReader(), 350);
+    this.saveSoon = debounce(() => this.save(), App.vault?.kind === 'drive' ? 2000 : 800);
+    this.readerSoon = debounce(() => this.mode === 'split' && this.renderReader(), this.text.length > 60000 ? 1200 : 350);
+    this.statusSoon = debounce(() => Status.update(), 500);
     this.ta.addEventListener('input', () => {
       this.text = this.ta.value; this.paint(); this.grow();
       if (!this.dirty) { this.dirty = true; App.renderTabs(); }
-      this.saveSoon(); this.readerSoon(); this.suggest(); Status.update();
+      this.saveSoon(); this.readerSoon(); this.suggest(); this.statusSoon();
     });
     this.ta.addEventListener('keydown', e => this.keydown(e));
     this.ta.addEventListener('blur', () => setTimeout(() => Suggest.hide(), 150));
@@ -1710,7 +1789,7 @@ class NoteView {
     this.ta.addEventListener('drop', e => this.drop(e));
     this.ta.addEventListener('select', () => AI.selection = this.ta.value.slice(this.ta.selectionStart, this.ta.selectionEnd));
     this.ta.addEventListener('keyup', () => AI.selection = this.ta.value.slice(this.ta.selectionStart, this.ta.selectionEnd));
-    this.ro = new ResizeObserver(() => this.mode !== 'read' && this.grow()); this.ro.observe(this.edWrap);
+    this.ro = new ResizeObserver(() => this.mode !== 'read' && this.grow(true)); this.ro.observe(this.edWrap);
     const commitTitle = () => { const n = App.safeName(this.titleIn.value); if (n && n !== stemOf(this.path)) App.rename(this.path, joinP(dirOf(this.path), n + '.md')); else this.titleIn.value = stemOf(this.path); };
     this.titleIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.ta.focus(); } });
     this.titleIn.addEventListener('blur', commitTitle);
@@ -1730,26 +1809,56 @@ class NoteView {
     this.setText(lines.join('\n'), true);
   }
   paint() {
-    try { this.hl.innerHTML = MDHL.html(this.ta.value); this.ta.classList.add('hl-on'); }
-    catch (e) { console.error(e); this.ta.classList.remove('hl-on'); }
+    try { MDHL.paint(this.hl, this.ta.value, this.hlCache ||= {}); this.ta.classList.add('hl-on'); }
+    catch (e) { console.error(e); this.hl.innerHTML = ''; this.hlCache = {}; this.ta.classList.remove('hl-on'); }
   }
-  setText(t, save) { this.text = t; this.ta.value = t; this.paint(); this.grow(); if (this.mode !== 'edit') this.renderReader(); if (save) { this.dirty = true; this.saveSoon.flush(); } }
+  setText(t, save) { this.text = t; this.ta.value = t; this.paint(); this.grow(true); if (this.mode !== 'edit') this.renderReader(); if (save) { this.dirty = true; this.saveSoon.flush(); } }
   externalUpdate(t) { if (this.dirty) return; this.text = t; this.ta.value = t; this.paint(); if (this.mode !== 'edit') this.renderReader(); }
   async save() { if (!this.dirty) return; this.dirty = false; App.renderTabs(); try { await App.writeNote(this.path, this.text); } catch (e) { this.dirty = true; } }
   async flush() { this.saveSoon?.cancel(); await this.save(); }
   onRename(np) { this.path = np; this.titleIn.value = stemOf(np); const nh = viewHead(this.tab, np, []); this.head.querySelector('.crumb').innerHTML = nh.querySelector('.crumb').innerHTML; }
-  onShow() { if (this.mode !== 'read') requestAnimationFrame(() => this.grow()); }
+  onShow() { if (this.mode !== 'read') requestAnimationFrame(() => this.grow(true)); }
   destroy() { this.ro?.disconnect(); Suggest.hide(); }
   goto(o = {}) {
-    let line = o.line;
-    if (line == null && o.sub) { const n = App.notes.get(this.path); const hd = n?.headings.find(x => norm(x.text) === norm(o.sub)); if (hd) line = hd.line; }
+    let line = o.line; const sub = o.sub || '';
+    if (line == null && sub) {
+      if (sub.startsWith('^')) { const b = Blocks.find(this.text, sub.slice(1)); if (b) line = b.line; else UI.toast('Parágrafo de destino não encontrado (^' + sub.slice(1) + ').', true); }
+      else { const n = App.notes.get(this.path); const hd = n?.headings.find(x => norm(x.text.replace(BID_RE, '')) === norm(sub)); if (hd) line = hd.line; }
+    }
     if (line == null) return;
+    const flash = el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
     if (this.mode === 'read') {
-      const n = App.notes.get(this.path); const idx = n?.headings.findIndex(x => x.line === line);
-      const hs = this.reader.querySelectorAll('h1,h2,h3,h4,h5,h6'); if (idx >= 0 && hs[idx]) hs[idx].scrollIntoView({ block: 'start' }); return;
+      let el = null;
+      if (sub.startsWith('^')) el = this.reader.querySelector(`[data-block-id="${CSS.escape(sub.slice(1))}"]`);
+      else { const n = App.notes.get(this.path); const idx = n?.headings.findIndex(x => x.line === line); el = idx >= 0 ? this.reader.querySelectorAll('h1,h2,h3,h4,h5,h6')[idx] : null; }
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); flash(el); } return;
     }
     const lines = this.text.split('\n'); let pos = 0; for (let i = 0; i < Math.min(line, lines.length); i++) pos += lines[i].length + 1;
-    requestAnimationFrame(() => { this.grow(); this.ta.focus({ preventScroll: true }); this.ta.setSelectionRange(pos, pos + (lines[line] || '').length); const c = caretXY(this.ta, pos); this.edWrap.scrollTop = this.ta.offsetTop + c.y - 120; });
+    requestAnimationFrame(() => { this.grow(true); this.ta.focus({ preventScroll: true }); this.ta.setSelectionRange(pos, pos + (lines[line] || '').replace(BID_RE, '').length); const c = caretXY(this.ta, pos); this.edWrap.scrollTo({ top: this.ta.offsetTop + c.y - this.edWrap.clientHeight / 3, behavior: 'smooth' }); const l = this.hl.children[line]; l && flash(l); });
+  }
+  /* escolher um parágrafo ou título (desta nota ou de outra) e inserir o vínculo no cursor */
+  pickBlock(path = this.path) {
+    const ta = this.ta; const s0 = ta.selectionStart, e0 = ta.selectionEnd; const selText = ta.value.slice(s0, e0);
+    const n = App.notes.get(path); const text = path === this.path ? ta.value : n?.text || '';
+    const curLine = path === this.path ? ta.value.slice(0, s0).split('\n').length - 1 : -1;
+    const items = Blocks.list(text).filter(b => b.text && b.line !== curLine);
+    UI.picker({ placeholder: path === this.path ? 'Vincular a qual parágrafo ou título desta nota?' : 'Parágrafo de “' + stemOf(path) + '”…', hint: 'Digite para filtrar · Enter insere o vínculo no cursor' + (path === this.path ? ' · para outra nota, digite [[Nome#^ no texto' : ''),
+      items: q => Blocks.match(q, items).slice(0, 150),
+      render: b => (b.heading ? icon('hash') : '<span style="color:var(--faint);width:18px;text-align:center">¶</span>') + '<span class="main">' + esc(b.text.slice(0, 140)) + '</span><span class="sub">linha ' + (b.line + 1) + (b.id ? ' · ^' + b.id : '') + '</span>',
+      onPick: async b => {
+        let link;
+        if (b.heading) link = '#' + b.text; else link = '#^' + await Blocks.ensure(path, b.line);
+        const pre = path === this.path ? '' : App.linkText(path);
+        const s1 = ta.selectionStart, e1 = ta.selectionEnd; const shift = s1 - s0;
+        const alias = selText ? '|' + selText : '';
+        insertText(ta, s0 + (s1 !== s0 ? shift : 0), e0 + (e1 !== e0 ? (e1 - e0) : 0) + (s1 !== s0 ? shift : 0), `[[${pre}${link}${alias}]]`);
+      } });
+  }
+  async copyBlockLink() {
+    const ta = this.ta; const line = ta.value.slice(0, ta.selectionStart).split('\n').length - 1;
+    if (!ta.value.split('\n')[line]?.trim()) return UI.toast('Coloque o cursor num parágrafo com texto.', true);
+    const id = await Blocks.ensure(this.path, line); const link = `[[${App.linkText(this.path)}#^${id}]]`;
+    try { await navigator.clipboard.writeText(link); UI.toast('Copiado: ' + link); } catch (e) { UI.prompt('Copie o vínculo', link); }
   }
   insertAtCursor(text) {
     if (this.mode === 'read') this.setMode('edit');
@@ -1759,6 +1868,8 @@ class NoteView {
     const r = ev.currentTarget.getBoundingClientRect();
     UI.menu(r.left - 160, r.bottom + 4, [
       { label: 'Transformar em caderno PDF (escrever à mão)', icon: 'book', action: () => Notebook.fromNote(this.path) },
+      { label: 'Vincular a um parágrafo desta nota…', icon: 'link', action: () => { this.setMode(this.mode === 'read' ? 'edit' : this.mode); this.pickBlock(); } },
+      { label: 'Copiar vínculo para o parágrafo do cursor', icon: 'copy', action: () => this.copyBlockLink() },
       { label: 'Inserir modelo', icon: 'template', action: () => Templates.pick(t => this.insertAtCursor(Templates.fill(t, stemOf(this.path)))) },
       { label: 'Abrir grafo local', icon: 'graph', action: () => App.open('graph:' + this.path, { newTab: true }) },
       { label: App.bookmarks.includes(this.path) ? 'Remover dos favoritos' : 'Adicionar aos favoritos', icon: 'star', action: () => App.toggleBookmark(this.path) },
@@ -1779,10 +1890,23 @@ class NoteView {
     if (m) {
       const q = m[1].split('|')[0];
       if (q.includes('#')) {
-        const [nm, hq] = q.split('#'); const p = App.resolve(nm, this.path) || (nm ? null : this.path); const n = p && App.notes.get(p);
+        const hi = q.indexOf('#'); const nm = q.slice(0, hi), hq = q.slice(hi + 1);
+        const p = nm ? App.resolve(nm, this.path) : this.path; const n = p && App.notes.get(p);
         if (!n) return Suggest.hide();
-        const items = n.headings.map(x => ({ x, m: fuzzy(hq, x.text) })).filter(x => x.m).slice(0, 30).map(x => x.x);
-        const [x, y] = pt(); return Suggest.show(items, x, y, it => icon('hash') + '<span class="main">' + esc(it.text) + '</span>', it => { const st = pos - hq.length; const after = ta.value.slice(pos, pos + 2) === ']]' ? '' : ']]'; insertText(ta, st, pos, it.text + after); });
+        const onlyBlocks = hq.startsWith('^'); const qq = onlyBlocks ? hq.slice(1) : hq;
+        const curLine = ta.value.slice(0, pos).split('\n').length - 1;
+        const blocks = Blocks.list(p === this.path ? ta.value : n.text).filter(b => b.text && (onlyBlocks ? !b.heading : true) && !(p === this.path && b.line === curLine));
+        const items = (qq ? Blocks.match(qq, blocks) : blocks.slice().sort((a, b) => (b.heading - a.heading) || a.line - b.line)).slice(0, 40);
+        const [x, y] = pt();
+        return Suggest.show(items, x, y, b => (b.heading ? icon('hash') : '<span style="color:var(--faint);width:18px;text-align:center">¶</span>') + '<span class="main">' + esc(b.text.slice(0, 90)) + '</span>',
+          async b => {
+            const st = pos - hq.length; const after = ta.value.slice(pos, pos + 2) === ']]' ? '' : ']]';
+            if (b.heading) { insertText(ta, st, pos, b.text + after); return; }
+            insertText(ta, st, pos, '^' + after); const caret = st + 1;
+            ta.setSelectionRange(caret, caret);
+            const id = await Blocks.ensure(p, b.line);
+            const c2 = ta.selectionStart; insertText(ta, c2, c2, id); ta.setSelectionRange(c2 + id.length + after.length, c2 + id.length + after.length);
+          });
       }
       const files = [...App.fileMap.values()].filter(f => f.type === 'file' && !App.isHidden(f.path));
       const scored = files.map(f => { const disp = extOf(f.path) === 'md' ? stemOf(f.path) : baseOf(f.path); return { f, disp, m: fuzzy(q, disp) || fuzzy(q, f.path) }; }).filter(x => x.m).sort((a, b) => b.m.score - a.m.score || a.disp.length - b.disp.length).slice(0, 40);
@@ -2093,6 +2217,8 @@ const Cmd = {
     this.add('template', 'Inserir modelo', () => nv() && Templates.pick(t => nv().insertAtCursor(Templates.fill(t, stemOf(nv().path)))), 'Mod+Shift+T');
     this.add('notebook', 'Transformar nota atual em caderno PDF', () => nv() && Notebook.fromNote(nv().path));
     this.add('blank-notebook', 'Novo caderno em branco (PDF)', () => Notebook.blank(App.active?.path && !App.active.path.startsWith('graph:') ? dirOf(App.active.path) : ''));
+    this.add('block-link', 'Vincular a um parágrafo desta nota', () => nv() && (nv().mode === 'read' && nv().setMode('edit'), nv().pickBlock()), 'Mod+Shift+K');
+    this.add('copy-block', 'Copiar vínculo para o parágrafo do cursor', () => nv() && nv().copyBlockLink(), 'Mod+Shift+C');
     this.add('folder', 'Criar nova pasta', () => App.createFolder(''));
     this.add('rename', 'Renomear arquivo atual', () => App.active?.path && !App.active.path.startsWith('graph:') && App.promptRename(App.active.path), 'F2');
     this.add('move', 'Mover arquivo atual', () => App.active?.path && !App.active.path.startsWith('graph:') && App.promptMove(App.active.path));

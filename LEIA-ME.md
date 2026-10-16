@@ -1,6 +1,6 @@
 # Códex: como publicar e configurar
 
-**O aplicativo **sasestá ** num único arquivo, `index.html`. Não há servidor nem banco de dados. As notas ficam na pasta que você escolher. A chave do Gemini e o Client ID ficam guardados apenas no navegador de cada aparelho.**
+O aplicativo inteiro está num único arquivo, `index.html`. Não há servidor nem banco de dados. As notas ficam na pasta que você escolher. A chave do Gemini e o Client ID ficam guardados apenas no navegador de cada aparelho.
 
 ## 1. Publicar no GitHub Pages
 
@@ -44,6 +44,24 @@ No Safari, abra o endereço e toque em Compartilhar e depois em "Adicionar à Te
   - no Drive, vão para a lixeira do Google Drive;
   - numa pasta local, vão para a pasta `.trash` do cofre.
 
+## Barra de formatação
+
+Acima do editor ficam os comandos de formatação: negrito, itálico, sublinhado, tachado, fonte, tamanho, cor da fonte, cores de realce, títulos, listas, caixas de destaque e alinhamento de parágrafo.
+
+- Negrito, itálico, tachado, títulos, listas e o realce amarelo usam Markdown puro.
+- Sublinhado, cores, fonte, tamanho e alinhamento de um parágrafo específico usam pequenas etiquetas HTML. No modo edição, elas aparecem em cinza.
+- O alinhamento justificado é o padrão geral. Ele pode ser alterado em Configurações, Aparência e editor, onde também se escolhe a fonte geral das notas.
+
+## Vínculos entre parágrafos
+
+Para ligar um trecho a outro parágrafo, da mesma nota ou de outra:
+
+- Na mesma nota: clique no botão ¶ da barra de formatação, ou use Ctrl/⌘+Shift+K. Digite palavras do parágrafo de destino e tecle Enter. Se houver texto selecionado, ele vira o rótulo do vínculo.
+- Digitando: escreva `[[#^` e palavras do parágrafo para ver as sugestões. Para outra nota, escreva `[[Nome da nota#^`. Com `[[#` aparecem títulos e parágrafos.
+- Para levar o vínculo a outra nota: com o cursor no parágrafo, use Ctrl/⌘+Shift+C. O vínculo vai para a área de transferência, pronto para colar.
+
+O Códex marca o parágrafo de destino com um código curto no fim da linha, como `^a1b2c3`. É o mesmo padrão do Obsidian. No modo leitura, o vínculo mostra o início do parágrafo de destino, e um clique leva até ele e o destaca.
+
 ## Atalhos principais
 
 | Atalho | Ação |
@@ -51,6 +69,9 @@ No Safari, abra o endereço e toque em Compartilhar e depois em "Adicionar à Te
 | Ctrl/⌘+O | Abrir arquivo |
 | Ctrl/⌘+P | Paleta de comandos |
 | Ctrl/⌘+N | Nova nota |
+| Ctrl/⌘+B, I, U | Negrito, itálico, sublinhado |
+| Ctrl/⌘+Shift+K | Vincular a um parágrafo desta nota |
+| Ctrl/⌘+Shift+C | Copiar vínculo do parágrafo do cursor |
 | Ctrl/⌘+E | Alternar edição e leitura |
 | Ctrl/⌘+G | Grafo |
 | Ctrl/⌘+Shift+F | Busca |
