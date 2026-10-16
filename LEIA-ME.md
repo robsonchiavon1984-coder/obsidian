@@ -1,6 +1,6 @@
 # Códex: como publicar e configurar
 
-O aplicativo inteiro está num único arquivo, `index.html`. Não há servidor nem banco de dados. As notas ficam na pasta que você escolher. A chave do Gemini e o Client ID ficam guardados apenas no navegador de cada aparelho.
+**O aplicativo **sasestá ** num único arquivo, `index.html`. Não há servidor nem banco de dados. As notas ficam na pasta que você escolher. A chave do Gemini e o Client ID ficam guardados apenas no navegador de cada aparelho.**
 
 ## 1. Publicar no GitHub Pages
 

@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#1e1e1e">
 <title>Códex</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 56 18v28L32 60 8 46V18z' fill='%238a6cf0'/%3E%3Cpath d='M32 14 46 22v20L32 50 18 42V22z' fill='%23fff' opacity='.85'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/marked@18.1.1/lib/marked.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"></script>
 <style>
@@ -100,11 +101,11 @@ aside.collapsed{display:none}
 
 /* editor */
 .ed-wrap{flex:1;overflow:auto;display:flex;justify-content:center}
-.ed{width:100%;max-width:var(--line-width);min-height:100%;padding:24px 28px 50vh;border:0;outline:none;resize:none;background:transparent;color:var(--text);font-family:var(--font);font-size:var(--editor-size);line-height:1.65;tab-size:4;overflow:hidden}
+.ed{width:100%;max-width:var(--line-width);min-height:100%;padding:24px 28px 50vh;border:0;outline:none;resize:none;background:transparent;color:var(--text);font-family:var(--text-font,var(--font));font-size:var(--editor-size);line-height:1.65;tab-size:4;overflow:hidden}
 .ed.mono{font-family:var(--mono);font-size:calc(var(--editor-size) - 1px)}
 .ed-stack{position:relative;width:100%;max-width:var(--line-width)}
 .ed-stack .ed{max-width:none;position:relative;z-index:1}
-.ed-hl{position:absolute;inset:0;padding:24px 28px 50vh;font-family:var(--font);font-size:var(--editor-size);line-height:1.65;tab-size:4;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;color:var(--text);pointer-events:none;overflow:hidden}
+.ed-hl{position:absolute;inset:0;padding:24px 28px 50vh;font-family:var(--text-font,var(--font));font-size:var(--editor-size);line-height:1.65;tab-size:4;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;color:var(--text);pointer-events:none;overflow:hidden}
 .ed.hl-on{color:transparent;caret-color:var(--text);-webkit-text-fill-color:transparent}
 .ed.hl-on::selection{background:rgba(138,108,240,.35);-webkit-text-fill-color:transparent}
 .ed.mono~.ed-hl,.ed-stack:has(.ed.mono) .ed-hl{font-family:var(--mono);font-size:calc(var(--editor-size) - 1px)}
@@ -123,7 +124,7 @@ aside.collapsed{display:none}
 
 /* reader */
 .reader{flex:1;overflow:auto;display:flex;justify-content:center}
-.md{width:100%;max-width:var(--line-width);padding:24px 28px 50vh;font-size:var(--editor-size);line-height:1.7;word-wrap:break-word}
+.md{width:100%;max-width:var(--line-width);padding:24px 28px 50vh;font-family:var(--text-font,var(--font));font-size:var(--editor-size);line-height:1.7;word-wrap:break-word}
 .md h1,.md h2,.md h3,.md h4,.md h5,.md h6{line-height:1.3;margin:1.3em 0 .5em;font-weight:700}
 .md h1{font-size:1.9em}.md h2{font-size:1.55em}.md h3{font-size:1.3em}.md h4{font-size:1.12em}
 .md .inline-title{font-size:1.9em;font-weight:700;margin:.3em 0 .6em}
@@ -351,7 +352,7 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
   .ed,.md{padding-left:18px;padding-right:18px}
   .ed-stack{position:relative;width:100%;max-width:var(--line-width)}
 .ed-stack .ed{max-width:none;position:relative;z-index:1}
-.ed-hl{position:absolute;inset:0;padding:24px 28px 50vh;font-family:var(--font);font-size:var(--editor-size);line-height:1.65;tab-size:4;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;color:var(--text);pointer-events:none;overflow:hidden}
+.ed-hl{position:absolute;inset:0;padding:24px 28px 50vh;font-family:var(--text-font,var(--font));font-size:var(--editor-size);line-height:1.65;tab-size:4;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;color:var(--text);pointer-events:none;overflow:hidden}
 .ed.hl-on{color:transparent;caret-color:var(--text);-webkit-text-fill-color:transparent}
 .ed.hl-on::selection{background:rgba(138,108,240,.35);-webkit-text-fill-color:transparent}
 .ed.mono~.ed-hl,.ed-stack:has(.ed.mono) .ed-hl{font-family:var(--mono);font-size:calc(var(--editor-size) - 1px)}
@@ -375,6 +376,37 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 @media print{
   #ribbon,#left,#right,#tabbar,#statusbar,.view-head{display:none!important}
 }
+
+/* alinhamento justificado */
+:root.justify .md p,:root.justify .md li,:root.justify .md blockquote,:root.justify .md .callout-content,:root.justify .md td{text-align:justify;-webkit-hyphens:auto;hyphens:auto}
+:root.ed-justify .ed,:root.ed-justify .ed-hl{text-align:justify}
+.md [style*="text-align"] p,.md [style*="text-align"] li{text-align:inherit!important}
+.md mark[style]{color:#111}
+.md u{text-decoration-thickness:1px;text-underline-offset:2px}
+.m-tagh{color:var(--faint);opacity:.75}
+/* barra de formatação */
+.fmt-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px 10px;border-bottom:1px solid var(--border);background:var(--bg);flex:none}
+.fmt-bar::-webkit-scrollbar{display:none}
+.fb{border:0;background:none;min-width:32px;height:32px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;gap:1px;color:var(--text);cursor:pointer;flex:none;padding:0 5px}
+.fb:hover{background:var(--bg3)}
+.fb .ft{font-size:16px;font-family:Georgia,"Times New Roman",serif}
+.fb svg.i{width:17px;height:17px}
+.fb svg.i.mini{width:11px;height:11px;color:var(--faint)}
+.fsep{width:1px;height:20px;background:var(--border);margin:0 5px;flex:none}
+.fsel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;height:30px;padding:0 6px;margin:0 2px;flex:none;max-width:140px;cursor:pointer}
+.fmt-pop{position:fixed;z-index:210;background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:8px;min-width:180px;display:flex;flex-direction:column;gap:6px}
+.fsw-grid{display:grid;grid-template-columns:repeat(5,28px);gap:6px}
+.fsw{width:28px;height:28px;border-radius:6px;border:1px solid rgba(0,0,0,.25);cursor:pointer}
+.fsw:hover{outline:2px solid var(--accent)}
+.fmt-auto,.fmt-item{border:0;background:none;text-align:left;padding:6px 8px;border-radius:5px;cursor:pointer;color:var(--text)}
+.fmt-auto:hover,.fmt-item:hover{background:var(--accent-bg)}
+.fmt-custom{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;padding:2px 4px}
+.fmt-custom input{width:28px;height:28px;border:0;padding:0;background:none}
+@media print{.fmt-bar{display:none!important}}
+.m-mk{background:color-mix(in srgb,var(--mk) 55%,transparent);border-radius:2px}
+#pane-ai .pane-head .title{flex:none;margin-right:6px}
+.ai-model-box{min-width:0;flex:1 1 auto;display:flex}
+.ai-model{max-width:100%;padding:3px 6px;font-size:12px;height:28px}
 
 </style>
 </head>
@@ -443,6 +475,13 @@ const ICONS = {
   save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
   quote: '<path d="M3 21c3 0 7-1 7-8V5H3v8h4c0 4-2 5-4 5zM14 21c3 0 7-1 7-8V5h-7v8h4c0 4-2 5-4 5z"/>',
   template: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  listol: '<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  checksq: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m8 12 3 3 5-6"/>',
+  alignleft: '<path d="M3 6h18M3 10h12M3 14h18M3 18h12"/>',
+  aligncenter: '<path d="M3 6h18M6 10h12M3 14h18M6 18h12"/>',
+  alignright: '<path d="M3 6h18M9 10h12M3 14h18M9 18h12"/>',
+  alignjustify: '<path d="M3 6h18M3 10h18M3 14h18M3 18h18"/>',
+  clearfmt: '<path d="M4 7V4h16v3M9 20h6M12 4 9 20M4 4l16 16"/>',
   pages: '<rect x="8" y="2" width="13" height="17" rx="2"/><path d="M16 22H5a2 2 0 0 1-2-2V7"/>'
 };
 const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24">${ICONS[n] || ''}</svg>`;
@@ -483,9 +522,9 @@ const Settings = {
   defaults: {
     theme: 'dark', defaultMode: 'edit', editorSize: 16, lineWidth: 760, readable: true, spellcheck: true, monoEditor: false,
     attachFolder: 'Anexos', dailyFolder: 'Diário', dailyFormat: 'YYYY-MM-DD', dailyTemplate: '', templatesFolder: 'Modelos',
-    googleClientId: '', geminiKey: '', geminiModel: 'gemini-2.5-flash', geminiPaid: false, geminiExtra: '', geminiAgent: false,
+    googleClientId: '', geminiKey: '', geminiModel: 'auto:pro', geminiPaid: false, geminiExtra: '', geminiAgent: false,
     penColors: ['#1b1b1b', '#1f5fd6', '#d22d2d', '#178a3c', '#8a3fd1', '#e07b00'], hlColors: ['#ffe600', '#7cf06a', '#5ad1ff', '#ff8ad8'],
-    penOnly: true, notebookPages: 2, notebookPattern: 'lined', showThumbs: false
+    penOnly: true, textAlign: 'justify', justifyEditor: true, textFont: '', showFormatBar: true, notebookPages: 2, notebookPattern: 'lined', showThumbs: false
   },
   data: {},
   load() { try { this.data = JSON.parse(localStorage.getItem('codex.settings') || '{}'); } catch (e) { this.data = {}; } },
@@ -496,6 +535,10 @@ const Settings = {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     document.documentElement.style.setProperty('--editor-size', this.get('editorSize') + 'px');
     document.documentElement.style.setProperty('--line-width', this.get('readable') ? this.get('lineWidth') + 'px' : '100%');
+    const r = document.documentElement; r.classList.toggle('justify', this.get('textAlign') === 'justify');
+    r.classList.toggle('ed-justify', this.get('textAlign') === 'justify' && this.get('justifyEditor'));
+    if (this.get('textFont')) r.style.setProperty('--text-font', this.get('textFont')); else r.style.removeProperty('--text-font');
+    document.querySelectorAll('.fmt-bar').forEach(b => b.classList.toggle('hidden', !this.get('showFormatBar') || b.dataset.read === '1'));
   }
 };
 
@@ -1411,6 +1454,132 @@ const Templates = {
   }
 };
 
+/* ===================== BARRA DE FORMATAÇÃO DO EDITOR ===================== */
+const FONTS = [
+  ['', 'Fonte padrão'], ["Georgia, 'Times New Roman', serif", 'Georgia'], ["'Times New Roman', Times, serif", 'Times New Roman'],
+  ["'EB Garamond', Garamond, serif", 'Garamond'], ['Lora, Georgia, serif', 'Lora'], ['Merriweather, Georgia, serif', 'Merriweather'],
+  ['Arial, Helvetica, sans-serif', 'Arial'], ['Calibri, Carlito, Arial, sans-serif', 'Calibri'], ['Verdana, Geneva, sans-serif', 'Verdana'],
+  ['ui-monospace, Menlo, Consolas, monospace', 'Monoespaçada']
+];
+const SIZES = [['0.8em', 'Pequeno'], ['', 'Normal'], ['1.2em', 'Grande'], ['1.45em', 'Maior'], ['1.8em', 'Enorme']];
+const TEXT_COLORS = ['#d32f2f', '#e65100', '#f9a825', '#2e7d32', '#00838f', '#1565c0', '#6a1b9a', '#ad1457', '#5d4037', '#757575'];
+const HL_COLORS = [['', 'Amarelo (padrão)', '#ffe066'], ['#b9f6ca', 'Verde', '#b9f6ca'], ['#b3e5fc', 'Azul', '#b3e5fc'], ['#f8bbd0', 'Rosa', '#f8bbd0'], ['#ffccbc', 'Laranja', '#ffccbc'], ['#e1bee7', 'Lilás', '#e1bee7'], ['#cfd8dc', 'Cinza', '#cfd8dc']];
+const ALIGN_RE = /^<div style="text-align:\s*(left|center|right|justify)">\s*$/;
+
+const Fmt = {
+  /* expande a seleção para linhas inteiras */
+  lines(ta) { const v = ta.value; const s = v.lastIndexOf('\n', ta.selectionStart - 1) + 1; let e = v.indexOf('\n', ta.selectionEnd - (ta.selectionEnd > ta.selectionStart && v[ta.selectionEnd - 1] === '\n' ? 1 : 0)); if (e < 0) e = v.length; return [s, e]; },
+  wrap(ta, a, b = a) {
+    const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, sel = v.slice(s, e);
+    if (sel.startsWith(a) && sel.endsWith(b) && sel.length >= a.length + b.length) return insertText(ta, s, e, sel.slice(a.length, sel.length - b.length));
+    if (v.slice(s - a.length, s) === a && v.slice(e, e + b.length) === b) { insertText(ta, s - a.length, e + b.length, sel); ta.setSelectionRange(s - a.length, e - a.length); return; }
+    insertText(ta, s, e, a + sel + b);
+    if (sel) ta.setSelectionRange(s + a.length, s + a.length + sel.length); else ta.setSelectionRange(s + a.length, s + a.length);
+  },
+  /* aplica uma propriedade de estilo num <span>, substituindo a mesma propriedade se a seleção já estiver nesse span */
+  style(ta, tag, prop, val) {
+    const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value; let sel = v.slice(s, e);
+    const re = new RegExp(`^<${tag} style="${prop}:[^"]*">([\\s\\S]*)</${tag}>$`);
+    const m = re.exec(sel); if (m) sel = m[1];
+    if (!val) return insertText(ta, s, e, sel);
+    const a = `<${tag} style="${prop}:${val}">`, b = `</${tag}>`;
+    insertText(ta, s, e, a + sel + b);
+    ta.setSelectionRange(s + a.length, s + a.length + sel.length);
+  },
+  linePrefix(ta, fn) {
+    const [s, e] = this.lines(ta); const out = ta.value.slice(s, e).split('\n').map(fn).join('\n');
+    insertText(ta, s, e, out); ta.setSelectionRange(s, s + out.length);
+  },
+  heading(ta, n) { this.linePrefix(ta, l => { const m = /^(#{1,6})\s+/.exec(l); const body = l.replace(/^#{1,6}\s+/, ''); return m && m[1].length === n ? body : '#'.repeat(n) + ' ' + body; }); },
+  list(ta, kind) {
+    const lines = ta.value.slice(...this.lines(ta)).split('\n'); let i = 0;
+    const has = { ul: /^\s*[-*+]\s+(?!\[[ xX]\])/, ol: /^\s*\d+[.)]\s+/, task: /^\s*[-*+]\s+\[[ xX]\]\s+/ }[kind];
+    const all = lines.every(l => !l.trim() || has.test(l));
+    this.linePrefix(ta, l => {
+      if (!l.trim()) return l; const ind = /^\s*/.exec(l)[0]; const body = l.trim().replace(/^([-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/, '');
+      if (all) return ind + body; i++; return ind + (kind === 'ul' ? '- ' : kind === 'ol' ? i + '. ' : '- [ ] ') + body;
+    });
+  },
+  quote(ta) { const lines = ta.value.slice(...this.lines(ta)).split('\n'); const all = lines.every(l => /^>\s?/.test(l)); this.linePrefix(ta, l => all ? l.replace(/^>\s?/, '') : '> ' + l); },
+  callout(ta, type) { const [s, e] = this.lines(ta); const body = ta.value.slice(s, e) || 'Texto'; const out = `> [!${type}] ${CALLOUT_TITLES[type] || ''}\n` + body.split('\n').map(l => '> ' + l).join('\n'); insertText(ta, s, e, out); },
+  align(ta, dir) {
+    const v = ta.value; let [s, e] = this.lines(ta);
+    /* se o bloco já está dentro de um <div style="text-align:…">, troca ou remove */
+    const before = v.slice(0, s).replace(/\n+$/, ''); const openStart = before.lastIndexOf('\n') + 1; const openLine = before.slice(openStart);
+    const after = v.slice(e).replace(/^\n+/, ''); const closeIdx = e + (v.slice(e).length - after.length);
+    if (ALIGN_RE.test(openLine) && after.startsWith('</div>')) {
+      const inner = v.slice(s, e); const closeEnd = closeIdx + 6;
+      const repl = dir === Settings.get('textAlign') ? inner : `<div style="text-align:${dir}">\n\n${inner}\n\n</div>`;
+      insertText(ta, openStart, closeEnd, repl); return;
+    }
+    if (dir === Settings.get('textAlign')) return UI.toast('Este já é o alinhamento padrão das notas.');
+    insertText(ta, s, e, `<div style="text-align:${dir}">\n\n${v.slice(s, e)}\n\n</div>`);
+  },
+  clear(ta) {
+    const s = ta.selectionStart, e = ta.selectionEnd; if (s === e) return UI.toast('Selecione o trecho de que deseja remover a formatação.');
+    const out = ta.value.slice(s, e).replace(/<\/?(span|u|mark|font|sup|sub)\b[^>]*>/gi, '').replace(/\*\*|__|~~|==/g, '').replace(/(^|[^*\w])[*_](?=\S)([^*_\n]*?\S)[*_](?![*\w])/g, '$1$2');
+    insertText(ta, s, e, out); ta.setSelectionRange(s, s + out.length);
+  }
+};
+
+class FormatBar {
+  constructor(view) { this.v = view; this.el = h('div', { class: 'fmt-bar' }); this.build(); }
+  get ta() { return this.v.ta; }
+  run(fn) { if (this.v.mode === 'read') this.v.setMode('edit'); fn(this.ta); this.ta.focus(); }
+  btn(html, title, fn, cls = '') { return h('button', { class: 'fb ' + cls, title, html, onmousedown: e => e.preventDefault(), onclick: () => this.run(fn) }); }
+  sep() { return h('span', { class: 'fsep' }); }
+  palette(anchor, items, onPick, custom) {
+    $$('.fmt-pop').forEach(p => p.remove());
+    const pop = h('div', { class: 'fmt-pop' });
+    items.forEach(it => pop.append(it));
+    if (custom) { const ci = h('input', { type: 'color', value: '#c62828', title: 'Outra cor' }); ci.onchange = () => { pop.remove(); onPick(ci.value); }; pop.append(h('label', { class: 'fmt-custom' }, ci, 'Outra cor…')); }
+    document.body.append(pop); const r = anchor.getBoundingClientRect(); const pr = pop.getBoundingClientRect();
+    pop.style.left = Math.max(6, Math.min(r.left, innerWidth - pr.width - 6)) + 'px'; pop.style.top = (r.bottom + 4) + 'px';
+    const off = e => { if (!pop.contains(e.target) && e.target !== anchor) { pop.remove(); document.removeEventListener('pointerdown', off, true); } };
+    setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+    return pop;
+  }
+  build() {
+    const el = this.el; const T = (t, st = '') => `<span class="ft" style="${st}">${t}</span>`;
+    const font = h('select', { class: 'fsel', title: 'Fonte do trecho selecionado', onchange: e => { const val = e.target.value; e.target.selectedIndex = 0; this.run(ta => Fmt.style(ta, 'span', 'font-family', val === '__default' ? '' : val)); } },
+      h('option', { value: '', disabled: true, selected: true }, 'Fonte'), ...FONTS.map(([v, l]) => h('option', { value: v || '__default', style: v ? `font-family:${v}` : '' }, l)));
+    const size = h('select', { class: 'fsel', title: 'Tamanho do trecho selecionado', onchange: e => { const val = e.target.value; e.target.selectedIndex = 0; this.run(ta => Fmt.style(ta, 'span', 'font-size', val === '__default' ? '' : val)); } },
+      h('option', { value: '', disabled: true, selected: true }, 'Tamanho'), ...SIZES.map(([v, l]) => h('option', { value: v || '__default' }, l)));
+    const colorBtn = h('button', { class: 'fb', title: 'Cor da fonte', html: T('A', 'border-bottom:3px solid #d32f2f;line-height:1;padding:0 2px') + icon('chevd', 'mini'), onmousedown: e => e.preventDefault() });
+    colorBtn.onclick = () => {
+      const sw = TEXT_COLORS.map(c => h('button', { class: 'fsw', style: { background: c }, title: c, onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => Fmt.style(ta, 'span', 'color', c)); } }));
+      this.palette(colorBtn, [h('div', { class: 'fsw-grid' }, ...sw), h('button', { class: 'fmt-auto', text: 'Cor automática (remover)', onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => Fmt.style(ta, 'span', 'color', '')); } })], c => this.run(ta => Fmt.style(ta, 'span', 'color', c)), true);
+    };
+    const hlBtn = h('button', { class: 'fb', title: 'Cor do realce', html: icon('highlighter') + icon('chevd', 'mini'), onmousedown: e => e.preventDefault() });
+    hlBtn.onclick = () => {
+      const sw = HL_COLORS.map(([v, l, show]) => h('button', { class: 'fsw', style: { background: show }, title: l, onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => v ? Fmt.style(ta, 'mark', 'background', v) : Fmt.wrap(ta, '==')); } }));
+      this.palette(hlBtn, [h('div', { class: 'fsw-grid' }, ...sw), h('button', { class: 'fmt-auto', text: 'Remover realce', onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => { const s = ta.selectionStart, e = ta.selectionEnd; const out = ta.value.slice(s, e).replace(/<\/?mark\b[^>]*>/g, '').replace(/==/g, ''); insertText(ta, s, e, out); }); } })], c => this.run(ta => Fmt.style(ta, 'mark', 'background', c)), true);
+    };
+    const headBtn = h('button', { class: 'fb', title: 'Títulos', html: T('T', 'font-weight:700') + icon('chevd', 'mini'), onmousedown: e => e.preventDefault() });
+    headBtn.onclick = () => this.palette(headBtn, [1, 2, 3, 4].map(n => h('button', { class: 'fmt-item', html: `<span style="font-size:${1.5 - n * .15}em;font-weight:700">Título ${n}</span>`, onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => Fmt.heading(ta, n)); } })));
+    const callBtn = h('button', { class: 'fb', title: 'Caixa de destaque (callout)', html: icon('quote') + icon('chevd', 'mini'), onmousedown: e => e.preventDefault() });
+    callBtn.onclick = () => this.palette(callBtn, [['quote', 'Citação simples'], ['note', 'Nota'], ['tip', 'Dica'], ['warning', 'Atenção'], ['danger', 'Perigo'], ['example', 'Exemplo'], ['question', 'Pergunta'], ['quote2', 'Citação (callout)']].map(([t, l]) => h('button', { class: 'fmt-item', text: l, onmousedown: e => e.preventDefault(), onclick: () => { $$('.fmt-pop').forEach(p => p.remove()); this.run(ta => t === 'quote' ? Fmt.quote(ta) : Fmt.callout(ta, t === 'quote2' ? 'quote' : t)); } })));
+    el.append(
+      this.btn(T('B', 'font-weight:800'), 'Negrito (' + MOD + '+B)', ta => Fmt.wrap(ta, '**')),
+      this.btn(T('I', 'font-style:italic;font-family:Georgia,serif'), 'Itálico (' + MOD + '+I)', ta => Fmt.wrap(ta, '*')),
+      this.btn(T('U', 'text-decoration:underline'), 'Sublinhado (' + MOD + '+U)', ta => Fmt.wrap(ta, '<u>', '</u>')),
+      this.btn(T('S', 'text-decoration:line-through'), 'Tachado', ta => Fmt.wrap(ta, '~~')),
+      this.btn(T('x²'), 'Sobrescrito', ta => Fmt.wrap(ta, '<sup>', '</sup>')),
+      this.sep(), font, size, colorBtn, hlBtn, this.sep(), headBtn,
+      this.btn(icon('list'), 'Lista com marcadores', ta => Fmt.list(ta, 'ul')),
+      this.btn(icon('listol'), 'Lista numerada', ta => Fmt.list(ta, 'ol')),
+      this.btn(icon('checksq'), 'Lista de tarefas', ta => Fmt.list(ta, 'task')),
+      callBtn, this.sep(),
+      this.btn(icon('alignleft'), 'Alinhar este parágrafo à esquerda', ta => Fmt.align(ta, 'left')),
+      this.btn(icon('aligncenter'), 'Centralizar este parágrafo', ta => Fmt.align(ta, 'center')),
+      this.btn(icon('alignright'), 'Alinhar este parágrafo à direita', ta => Fmt.align(ta, 'right')),
+      this.btn(icon('alignjustify'), 'Justificar este parágrafo', ta => Fmt.align(ta, 'justify')),
+      this.sep(),
+      this.btn(icon('link'), 'Link interno [[ ]]', ta => { Fmt.wrap(ta, '[[', ']]'); this.v.suggest(); }),
+      this.btn(icon('clearfmt'), 'Limpar formatação do trecho', ta => Fmt.clear(ta)));
+  }
+}
+
 /* ===================== VISUALIZAÇÕES ===================== */
 function caretXY(ta, pos) {
   const cs = getComputedStyle(ta); const m = document.createElement('div');
@@ -1452,6 +1621,11 @@ const Suggest = {
 const MDHL = {
   inline(l) {
     let s = esc(l);
+    const C = '[#\\w(),.\\s%]+?';
+    s = s.replace(new RegExp('(&lt;span style=&quot;color:\\s*(' + C + ')&quot;&gt;)([\\s\\S]*?)(&lt;/span&gt;)', 'g'), '<span class="m-tagh">$1</span><span style="color:$2">$3</span><span class="m-tagh">$4</span>');
+    s = s.replace(new RegExp('(&lt;mark style=&quot;background:\\s*(' + C + ')&quot;&gt;)([\\s\\S]*?)(&lt;/mark&gt;)', 'g'), '<span class="m-tagh">$1</span><span class="m-mk" style="--mk:$2">$3</span><span class="m-tagh">$4</span>');
+    s = s.replace(/(&lt;u&gt;)([\s\S]*?)(&lt;\/u&gt;)/g, '<span class="m-tagh">$1</span><span style="text-decoration:underline">$2</span><span class="m-tagh">$3</span>');
+    s = s.replace(/(&lt;\/?(?:span|div|mark|sup|sub|font|p|br)\b(?:(?!&gt;).)*&gt;)/g, '<span class="m-tagh">$1</span>');
     s = s.replace(/(`+)([^`]+?)\1/g, '<span class="m-code">$1$2$1</span>');
     s = s.replace(/(!?\[\[)([^\]]+?)(\]\])/g, '<span class="m-faint">$1</span><span class="m-link">$2</span><span class="m-faint">$3</span>');
     s = s.replace(/(!?\[)([^\]\n]*)(\]\()([^)\s]+)(\))/g, '<span class="m-faint">$1</span><span class="m-link">$2</span><span class="m-faint">$3$4$5</span>');
@@ -1499,7 +1673,8 @@ class NoteView {
     this.paint();
     this.reader = h('div', { class: 'reader' });
     this.body = h('div', { class: 'view-body' }, this.edWrap, this.reader);
-    this.tab.el.append(this.head, this.body);
+    this.fbar = new FormatBar(this);
+    this.tab.el.append(this.head, this.fbar.el, this.body);
     this.bind(); this.setMode(this.mode, true);
     if (this.opts.focusTitle) setTimeout(() => { this.titleIn.focus(); this.titleIn.select(); }, 50);
     this.goto(this.opts);
@@ -1509,6 +1684,7 @@ class NoteView {
     this.mode = m; this.body.classList.toggle('split', m === 'split');
     this.edWrap.classList.toggle('hidden', m === 'read'); this.reader.classList.toggle('hidden', m === 'edit');
     this.head.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+    if (this.fbar) { this.fbar.el.dataset.read = m === 'read' ? '1' : '0'; this.fbar.el.classList.toggle('hidden', m === 'read' || !Settings.get('showFormatBar')); }
     if (m !== 'edit') this.renderReader();
     if (m !== 'read') { requestAnimationFrame(() => this.grow()); if (!initial) this.ta.focus(); }
   }
@@ -1630,6 +1806,7 @@ class NoteView {
     const wrap = (a, b = a) => { const sel = v.slice(s, en); if (sel.startsWith(a) && sel.endsWith(b) && sel.length >= a.length + b.length) insertText(ta, s, en, sel.slice(a.length, sel.length - b.length)); else { insertText(ta, s, en, a + sel + b); if (!sel) ta.setSelectionRange(s + a.length, s + a.length); } };
     if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') { e.preventDefault(); return wrap('**'); }
     if (mod && !e.shiftKey && e.key.toLowerCase() === 'i') { e.preventDefault(); return wrap('*'); }
+    if (mod && !e.shiftKey && e.key.toLowerCase() === 'u') { e.preventDefault(); return Fmt.wrap(ta, '<u>', '</u>'); }
     if (mod && e.shiftKey && e.key.toLowerCase() === 'h') { e.preventDefault(); return wrap('=='); }
     if (mod && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); const sel = v.slice(s, en); insertText(ta, s, en, '[' + sel + ']()'); ta.setSelectionRange(s + sel.length + 3, s + sel.length + 3); return; }
     if (mod && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); this.flush(); return; }
@@ -2684,12 +2861,15 @@ Data de hoje: ${fmtDate(new Date(), 'DD/MM/YYYY')}.` + (Settings.get('geminiExtr
         ['Revisar texto', 'Revise o texto em contexto quanto a gramática, clareza e coesão. Mostre a versão revisada e, depois, uma lista breve das alterações.'],
         ['Mapa de links', 'Sugira links internos [[...]] para conceitos desta nota que provavelmente têm ou merecem notas próprias no cofre. Use as ferramentas para verificar quais notas já existem.']
       ].map(([l, p]) => h('button', { class: 'chip', text: l, onclick: () => this.send(p) })));
-      pane.append(h('div', { class: 'pane-head' }, h('span', { class: 'title', html: 'Gemini' }),
+      this.modelBox = h('span', { class: 'ai-model-box' });
+      pane.append(h('div', { class: 'pane-head' }, h('span', { class: 'title', html: 'Gemini' }), this.modelBox,
+        h('button', { class: 'ib', title: 'Atualizar lista de modelos', html: icon('refresh'), onclick: async () => { try { const l = await this.refreshModels(true); UI.toast(l.length + ' modelos disponíveis na sua conta.'); } catch (e) { UI.error(e); } } }),
         h('button', { class: 'ib', title: 'Salvar conversa como nota', html: icon('save'), onclick: () => this.saveChat() }),
         h('button', { class: 'ib', title: 'Nova conversa', html: icon('plus'), onclick: () => this.reset() }),
         h('button', { class: 'ib', title: 'Configurações do Gemini', html: icon('settings'), onclick: () => SettingsUI.open('gemini') })),
         h('div', { class: 'ai' }, this.warnEl = h('div'), this.msgs, this.ctxEl, this.filesEl, quick, h('div', { class: 'ai-in' }, attach, this.input, this.sendBtn)));
-      this.empty();
+      this.empty(); this.renderModelSel();
+      this.refreshModels().catch(() => { });
     }
     this.renderCtx();
   },
@@ -2774,7 +2954,7 @@ Data de hoje: ${fmtDate(new Date(), 'DD/MM/YYYY')}.` + (Settings.get('geminiExtr
     finally { this.busy = false; this.sendBtn.innerHTML = icon('send'); this.sendBtn.title = 'Enviar'; this.abort = null; }
   },
   async call() {
-    const model = Settings.get('geminiModel').replace(/^models\//, '');
+    const model = await this.resolveModel();
     this.abort = new AbortController();
     const bubble = this.bubble('model', '<span class="typing"></span>');
     const r = await fetch(`${GEM}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
@@ -2867,10 +3047,64 @@ Data de hoje: ${fmtDate(new Date(), 'DD/MM/YYYY')}.` + (Settings.get('geminiExtr
     const p = await App.createNote('Gemini', 'Conversa ' + fmtDate(new Date(), 'YYYY-MM-DD HH.mm'), md, { newTab: true });
     UI.toast('Conversa salva em ' + p);
   },
+  /* ---------- modelos: lista sempre atualizada pela API ---------- */
+  modelInfo(id, name) {
+    const m = /^gemini-(\d+(?:\.\d+)?)-?(pro|flash-lite|flash|ultra|nano)?/i.exec(id) || [];
+    const ver = parseFloat(m[1]) || 0, family = (m[2] || '').toLowerCase();
+    const preview = /preview|exp/i.test(id);
+    const special = /embedding|tts|image|imagen|audio|live|robotics|computer-use|veo|aqa|learnlm|gemma/i.test(id);
+    return { id, name: name || id, ver, family, preview, special };
+  },
   async listModels() {
-    const r = await fetch(`${GEM}/models?pageSize=200`, { headers: { 'x-goog-api-key': Settings.get('geminiKey') } });
-    if (!r.ok) { let m = r.status; try { m = (await r.json()).error.message; } catch (e) { } throw new Error('Gemini: ' + m); }
-    return (await r.json()).models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => ({ id: m.name.replace(/^models\//, ''), name: m.displayName }));
+    const out = []; let tok = '';
+    do {
+      const r = await fetch(`${GEM}/models?pageSize=1000${tok ? '&pageToken=' + tok : ''}`, { headers: { 'x-goog-api-key': Settings.get('geminiKey') } });
+      if (!r.ok) { let m = r.status; try { m = (await r.json()).error.message; } catch (e) { } throw new Error('Gemini: ' + m); }
+      const j = await r.json(); out.push(...(j.models || [])); tok = j.nextPageToken;
+    } while (tok);
+    return out.filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => this.modelInfo(m.name.replace(/^models\//, ''), m.displayName))
+      .sort((a, b) => b.ver - a.ver || a.preview - b.preview || ['pro', 'flash', 'flash-lite', ''].indexOf(a.family) - ['pro', 'flash', 'flash-lite', ''].indexOf(b.family) || a.id.localeCompare(b.id));
+  },
+  cachedModels() { try { return JSON.parse(localStorage.getItem('codex.gemModels') || 'null'); } catch (e) { return null; } },
+  async refreshModels(force) {
+    const c = this.cachedModels();
+    if (!force && c && Date.now() - c.t < 6 * 3600e3) return c.list;
+    if (!Settings.get('geminiKey')) return c?.list || [];
+    const list = await this.listModels();
+    localStorage.setItem('codex.gemModels', JSON.stringify({ t: Date.now(), list }));
+    this.renderModelSel();
+    return list;
+  },
+  newest(family, list) {
+    const chat = list.filter(m => !m.special && m.ver);
+    const fam = family === 'pro' ? chat.filter(m => m.family === 'pro') : chat.filter(m => m.family === 'flash');
+    return fam.find(m => !m.preview) || fam[0] || chat[0];
+  },
+  async resolveModel() {
+    const sel = Settings.get('geminiModel').replace(/^models\//, '');
+    if (!sel.startsWith('auto:')) return sel;
+    let list = []; try { list = await this.refreshModels(); } catch (e) { list = this.cachedModels()?.list || []; }
+    const m = this.newest(sel.slice(5), list);
+    if (!m) throw new Error('Não foi possível obter a lista de modelos do Gemini. Escolha um modelo manualmente nas Configurações.');
+    return m.id;
+  },
+  modelOptions(showAll) {
+    const list = this.cachedModels()?.list || []; const cur = Settings.get('geminiModel');
+    const np = this.newest('pro', list), nf = this.newest('flash', list);
+    const opts = [['auto:pro', 'Automático: o Pro mais recente' + (np ? ' (' + np.id + ')' : '')], ['auto:flash', 'Automático: o Flash mais recente' + (nf ? ' (' + nf.id + ')' : '')]];
+    list.filter(m => showAll || !m.special).forEach(m => opts.push([m.id, m.id + (m.preview ? '  · prévia' : '')]));
+    if (!opts.some(o => o[0] === cur)) opts.push([cur, cur + ' (atual)']);
+    return opts;
+  },
+  modelSelect(showAll, onChange) {
+    const sel = h('select', { class: 'txt', onchange: e => { Settings.set('geminiModel', e.target.value); this.renderModelSel(); onChange && onChange(); } });
+    this.modelOptions(showAll).forEach(([v, l]) => sel.append(h('option', { value: v, selected: v === Settings.get('geminiModel') }, l)));
+    return sel;
+  },
+  renderModelSel() {
+    const box = this.modelBox; if (!box) return; box.innerHTML = '';
+    const sel = this.modelSelect(false); sel.classList.add('ai-model'); sel.title = 'Modelo do Gemini'; box.append(sel);
   }
 };
 
@@ -3058,13 +3292,21 @@ const SettingsUI = {
     const txt = (k, ph, type = 'text') => h('input', { class: 'txt', type, value: S.get(k), placeholder: ph || '', onchange: e => { S.set(k, type === 'number' ? +e.target.value : e.target.value.trim()); S.apply(); AI.renderCtx(); } });
     const sel = (k, opts) => h('select', { class: 'txt', onchange: e => { S.set(k, e.target.value); S.apply(); } }, ...opts.map(([v, l]) => h('option', { value: v, selected: S.get(k) === v }, l)));
     const sec = (id, t) => h('div', { class: 'set-sec', id: 'set-' + id, text: t });
-    const modelSel = h('input', { class: 'txt', value: S.get('geminiModel'), list: 'gem-models', onchange: e => S.set('geminiModel', e.target.value.trim()) });
-    const dl = h('datalist', { id: 'gem-models' });
-    const loadModels = h('button', { class: 'btn sm', text: 'Carregar modelos disponíveis', style: { marginTop: '6px' }, onclick: async () => { try { const ms = await AI.listModels(); dl.innerHTML = ''; ms.forEach(m => dl.append(h('option', { value: m.id }, m.name))); UI.toast(ms.length + ' modelos encontrados. Clique no campo para escolher.'); modelSel.focus(); } catch (e) { UI.error(e); } } });
+    const modelWrap = h('div', {}); let showAll = false;
+    const drawModels = () => { modelWrap.innerHTML = ''; modelWrap.append(AI.modelSelect(showAll),
+      h('div', { style: { display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' } },
+        h('button', { class: 'btn sm', html: icon('refresh') + 'Atualizar lista', onclick: async () => { try { const l = await AI.refreshModels(true); drawModels(); UI.toast(l.length + ' modelos encontrados.'); } catch (e) { UI.error(e); } } }),
+        h('label', { style: { fontSize: '12px', color: 'var(--muted)', display: 'flex', gap: '4px', alignItems: 'center' } }, h('input', { type: 'checkbox', checked: showAll, onchange: e => { showAll = e.target.checked; drawModels(); } }), 'mostrar modelos especiais'),
+        h('span', { style: { fontSize: '12px', color: 'var(--faint)' }, text: AI.cachedModels() ? 'Lista de ' + new Date(AI.cachedModels().t).toLocaleString('pt-BR') : 'Lista ainda não carregada' }))); };
+    drawModels(); if (S.get('geminiKey')) AI.refreshModels().then(drawModels).catch(() => { });
     body.append(
       sec('look', 'Aparência e editor'),
       row('Tema', '', sel('theme', [['dark', 'Escuro'], ['light', 'Claro'], ['system', 'Igual ao sistema']])),
       row('Modo ao abrir notas', '', sel('defaultMode', [['edit', 'Edição'], ['read', 'Leitura'], ['split', 'Lado a lado']])),
+      row('Alinhamento do texto', 'Vale para leitura, edição, cadernos em PDF e impressão. Não altera os arquivos.', sel('textAlign', [['justify', 'Justificado'], ['left', 'À esquerda']])),
+      row('Justificar também durante a edição', 'Se no iPad as cores do editor ficarem desalinhadas do texto, desligue esta opção.', sw('justifyEditor')),
+      row('Fonte do texto das notas', 'Fonte geral do editor e da leitura (a interface não muda).', sel('textFont', FONTS.map(([v, l]) => [v, l]))),
+      row('Mostrar barra de formatação', 'Negrito, cores, fontes, alinhamento etc. acima do editor', sw('showFormatBar')),
       row('Tamanho da fonte', 'Em pixels', txt('editorSize', '16', 'number')),
       row('Largura de leitura confortável', 'Limita a largura do texto', sw('readable')),
       row('Editor com fonte monoespaçada', '', sw('monoEditor')),
@@ -3078,8 +3320,8 @@ const SettingsUI = {
       sec('google', 'Google Drive'),
       row('Client ID do OAuth', 'Criado no Google Cloud Console (tipo “Aplicativo da Web”). A origem JavaScript autorizada deve ser o endereço onde este arquivo está publicado: <code>' + esc(location.origin) + '</code>', txt('googleClientId', '1234…apps.googleusercontent.com')),
       sec('gemini', 'Gemini'),
-      row('Chave da API', 'Fica guardada só neste navegador. Obtenha em aistudio.google.com', txt('geminiKey', 'AIza…', 'password')),
-      row('Modelo', 'Digite o nome ou carregue a lista da sua conta.', h('div', {}, modelSel, dl, loadModels)),
+      row('Chave da API', 'Fica guardada só neste navegador. Obtenha em aistudio.google.com', (() => { const i = txt('geminiKey', 'AIza…', 'password'); i.addEventListener('change', () => AI.refreshModels(true).then(drawModels).catch(e => UI.error(e))); return i; })()),
+      row('Modelo', 'A lista vem da sua conta no Google e se atualiza sozinha a cada 6 horas. As opções “Automático” passam a usar o modelo mais novo assim que o Google o lança.', modelWrap),
       row('Meu projeto tem faturamento ativo (nível pago)', 'No nível pago o Google não usa o conteúdo para aprimorar produtos. Marcar isto apenas remove o aviso: confira o seu projeto em aistudio.google.com.', sw('geminiPaid')),
       row('Permitir que o Gemini altere o cofre', 'Criar, editar, mover e renomear notas. Cada alteração pede sua confirmação.', sw('geminiAgent')),
       row('Instruções adicionais', 'Acrescentadas às instruções do sistema (estilo, formatação, preferências).', (() => { const t = h('textarea', { class: 'txt', rows: 4, placeholder: 'Ex.: Use prosa dissertativa, sem negrito; datas em d/m/aaaa; valores em algarismos e por extenso, sem símbolo de moeda.' }); t.value = S.get('geminiExtra'); t.onchange = () => S.set('geminiExtra', t.value); return t; })()),
