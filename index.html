@@ -3437,13 +3437,31 @@ class PdfView {
   /* ---------- eventos ---------- */
   bind() {
     const toU = (e, pg) => { const r = pg.el.getBoundingClientRect(); return [(e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale, e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5]; };
+    /* Caneta no Android (S Pen) e no iPad: o navegador decide rolar a página alguns milímetros depois do toque
+       e cancela o traço (pointercancel). O pointerdown chega antes do touchstart do mesmo contato, então
+       marcamos a caneta aqui e cancelamos a rolagem no touchstart/touchmove logo abaixo. */
+    this.pagesEl.addEventListener('pointerdown', e => { if (e.pointerType === 'pen' && this.tool !== 'hand') this.stylusAt = performance.now(); }, true);
+    const caretAt = (x, y) => {
+      let node = null, off = 0;
+      if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (p) { node = p.offsetNode; off = p.offset; } }
+      else if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(x, y); if (r) { node = r.startContainer; off = r.startOffset; } }
+      if (!node || node.nodeType !== 3 || !node.parentElement?.closest('.textLayer') || !this.pagesEl.contains(node)) return null;
+      return { node, off };
+    };
     this.pagesEl.addEventListener('pointerdown', e => {
+      /* seleção de texto com a caneta (para destacar trechos com as cores) */
+      if (this.tool === 'select' && e.pointerType === 'pen' && e.target.closest?.('.textLayer')) {
+        const a = caretAt(e.clientX, e.clientY); e.preventDefault(); this.hideSelPop();
+        const sel = getSelection(); if (a) sel.setBaseAndExtent(a.node, a.off, a.node, a.off); else sel.removeAllRanges();
+        this.penSel = { pid: e.pointerId, a }; return;
+      }
       const pgEl = e.target.closest('.pg'); if (!pgEl || e.target !== pgEl.querySelector('.live')) return;
       const pg = this.pages[+pgEl.dataset.i];
       let tool = this.tool; if (e.button === 5 || (e.buttons & 32)) tool = 'eraser';
+      else if (e.pointerType === 'pen' && (e.button === 2 || (e.buttons & 2)) && DRAW_TOOLS.has(tool)) tool = 'eraser'; // botão lateral da S Pen
       if (!DRAW_TOOLS.has(tool)) return;
       if (e.pointerType === 'touch' && (this.penOnly || this.penDown)) return; // rejeição de palma / dedo rola
-      if (e.button > 0 && e.button !== 5) return;
+      if (e.button > 0 && e.button !== 5 && !(e.pointerType === 'pen' && e.button === 2)) return;
       e.preventDefault(); this.hideSelPop();
       const pt = toU(e, pg);
       if (tool === 'text') { this.startText(pg, pt); return; }
@@ -3457,6 +3475,11 @@ class PdfView {
       else { const c = pg.ink.getContext('2d'); INK.style(c, it); }
     });
     this.pagesEl.addEventListener('pointermove', e => {
+      const ps = this.penSel;
+      if (ps && e.pointerId === ps.pid) {
+        const b = caretAt(e.clientX, e.clientY); if (!b) return; e.preventDefault();
+        if (!ps.a) { ps.a = b; } getSelection().setBaseAndExtent(ps.a.node, ps.a.off, b.node, b.off); return;
+      }
       const cur = this.cur; if (!cur || e.pointerId !== cur.pid) return;
       const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; const pg = cur.pg;
       if (cur.tool === 'eraser') { evs.forEach(ev => this.eraseAt(pg, toU(ev, pg))); return; }
@@ -3471,6 +3494,7 @@ class PdfView {
       const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); INK.draw(c, it);
     });
     const end = e => {
+      if (this.penSel && e.pointerId === this.penSel.pid) { this.penSel = null; return; }
       const cur = this.cur; if (!cur || e.pointerId !== cur.pid) return; this.cur = null; this.penDown = false; const pg = cur.pg;
       if (cur.tool === 'eraser') { if (cur.erased.length) { this.pushUndo({ t: 'del', page: pg.i, items: cur.erased }); this.saveSoon(); } return; }
       const it = cur.it;
@@ -3483,8 +3507,15 @@ class PdfView {
     };
     this.pagesEl.addEventListener('pointerup', end); this.pagesEl.addEventListener('pointercancel', end);
     /* Apple Pencil não deve rolar a página; dedo rola quando “só caneta” está ligado */
-    this.pagesEl.addEventListener('touchstart', e => { if (DRAW_TOOLS.has(this.tool) && [...e.touches].some(t => t.touchType === 'stylus')) e.preventDefault(); }, { passive: false });
-    this.pagesEl.addEventListener('touchmove', e => { if (DRAW_TOOLS.has(this.tool) && [...e.touches].some(t => t.touchType === 'stylus')) e.preventDefault(); }, { passive: false });
+    const blockScroll = e => {
+      if (this.tool === 'hand') return false;
+      if (this.cur || this.penSel) return true; // traço em curso: nem caneta nem palma rolam a página
+      if ((DRAW_TOOLS.has(this.tool) || this.tool === 'select') && [...e.touches].some(t => t.touchType === 'stylus')) return true; // Apple Pencil
+      return e.type === 'touchstart' && performance.now() - (this.stylusAt || 0) < 400; // S Pen (Android não informa touchType)
+    };
+    this.pagesEl.addEventListener('touchstart', e => { if (blockScroll(e) && e.cancelable) e.preventDefault(); }, { passive: false });
+    this.pagesEl.addEventListener('touchmove', e => { if (blockScroll(e) && e.cancelable) e.preventDefault(); }, { passive: false });
+    this.pagesEl.addEventListener('contextmenu', e => { if (this.cur || this.penSel || performance.now() - (this.stylusAt || 0) < 1500) e.preventDefault(); });
     /* pinça para zoom (dois dedos) */
     let pinch = null;
     this.scroller.addEventListener('touchstart', e => { const t = [...e.touches].filter(x => x.touchType !== 'stylus'); if (t.length === 2) { const r = this.scroller.getBoundingClientRect(); const mx = (t[0].clientX + t[1].clientX) / 2 - r.left, my = (t[0].clientY + t[1].clientY) / 2 - r.top; pinch = { d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY), mx, my, cx: this.scroller.scrollLeft + mx, cy: this.scroller.scrollTop + my, ratio: 1 }; this.pagesEl.style.transformOrigin = `${pinch.cx}px ${pinch.cy}px`; } }, { passive: true });
