@@ -563,6 +563,8 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .sticky.up .stk-card{position:absolute;bottom:0}
 .sticky.up.flip .stk-card{right:-30px;transform:none}
 .sticky.up:not(.flip) .stk-card{left:0}
+.pdf-tb .grp{flex-wrap:wrap;row-gap:4px}
+.stk-card{max-width:min(230px,80vw)}
 
 </style>
 </head>
@@ -1541,13 +1543,18 @@ const App = {
         }).join('\n');
         if (changed) updates.push([moved.get(np) || np, txt]);
       }
+      const revMoves = [];
       await this.vault.rename(from, to);
       /* anotações do PDF acompanham o arquivo */
+      for (const [o, nw] of moved) if (extOf(o) === 'pdf') {
+        const ro = joinP(dirOf(o), 'Revisão — ' + stemOf(o) + '.md'), rn = joinP(dirOf(nw), 'Revisão — ' + stemOf(nw) + '.md');
+        if (ro !== rn && this.fileMap.has(ro) && !this.fileMap.has(rn) && !moved.has(ro)) revMoves.push([ro, rn]);
+      }
       for (const [o, nw] of moved) if (extOf(o) === 'pdf') { const so = PdfView.sidecar(o), sn = PdfView.sidecar(nw); if (this.fileMap.has(so) || await this.vault.exists(so).catch(() => false)) { try { await this.vault.rename(so, sn); const fe = this.fileMap.get(so); this.fileMap.delete(so); this.fileMap.set(sn, { ...(fe || { type: 'file' }), path: sn }); this.addFile(sn); } catch (e) { } } }
       for (const [p, f] of [...this.fileMap]) if (p === from || p.startsWith(from + '/')) { this.fileMap.delete(p); const np = to + p.slice(from.length); this.fileMap.set(np, { ...f, path: np }); }
       this.addFile(to, this.fileMap.get(to)?.type || 'file');
       for (const [o, nw] of moved) { if (this.notes.has(o)) { const n = this.notes.get(o); this.notes.delete(o); this.notes.set(nw, { ...n, path: nw }); } if (this.blobs.has(o)) { this.blobs.set(nw, this.blobs.get(o)); this.blobs.delete(o); } }
-      this.bookmarks = this.bookmarks.map(b => { const bp = b.split('::')[0].split('#')[0]; const np = moved.get(bp) || (bp === from ? to : null); return np ? np + b.slice(bp.length) : b; }); this.saveBookmarks();
+      this.bookmarks = this.bookmarks.map(b => { const bp = b.split('::')[0].replace(/#page=\d+$/, ''); const np = moved.get(bp) || (bp === from ? to : null); return np ? np + b.slice(bp.length) : b; }); this.saveBookmarks();
       if (this.expanded.has(from)) { this.expanded.delete(from); this.expanded.add(to); }
       this.rebuildNames();
       for (const t of this.tabs) { const np = moved.get(t.path); if (np) { t.path = np; t.hist = t.hist.map(x => moved.get(x) || x); t.view?.onRename?.(np); } }
@@ -1556,6 +1563,7 @@ const App = {
       if (updates.length) UI.toast(`Links atualizados em ${updates.length} nota(s).`);
       ok = true;
       for (const [o, nw] of moved) { if (extOf(o) !== 'md' || stemOf(o) === stemOf(nw)) continue; const cf = joinP(Lex.folder(), App.safeName(stemOf(o))), nf = joinP(Lex.folder(), App.safeName(stemOf(nw))); if (this.fileMap.get(cf)?.type === 'folder' && !this.fileMap.has(nf)) setTimeout(() => this.rename(cf, nf), 50); }
+      for (const [ro, rn] of revMoves) await this.rename(ro, rn); // a revisão do PDF acompanha o novo nome
     } catch (e) { UI.error(e); }
     finally { Loading.hide(); }
     return ok;
@@ -2932,7 +2940,7 @@ const Panels = {
     return out;
   },
   snippet(text, line, word) {
-    const ln = (text.split('\n')[line] || '').trim(); let s = esc(ln.length > 220 ? ln.slice(0, 220) + '…' : ln);
+    const ln = (text.split('\n')[line] || '').replace(/<[^>]+>/g, '').replace(/%%[^%]*%%/g, '').replace(/^>\s*(\[![^\]]+\][-+]?\s*)?/, '').trim(); let s = esc(ln.length > 220 ? ln.slice(0, 220) + '…' : ln);
     s = s.replace(/\[\[([^\]]+)\]\]/g, (m, x) => '<mark>' + x.split('|').pop() + '</mark>');
     if (word) { const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); s = s.replace(re, '<mark>$1</mark>'); }
     return s;
@@ -3029,7 +3037,7 @@ const Panels = {
   },
   renderBookmarks() {
     const box = $('#pane-bookmarks .pane-scroll'); box.innerHTML = '';
-    const pathOf = b => b.split('::')[0].split('#')[0];
+    const pathOf = b => b.split('::')[0].replace(/#page=\d+$/, '');
     const bm = App.bookmarks.filter(b => App.fileMap.has(pathOf(b)));
     if (!bm.length) box.append(h('div', { class: 'empty', text: 'Nenhum favorito. Use o menu de contexto de um arquivo, ou selecione um trecho de PDF e toque em Favorito.' }));
     bm.forEach(b => {
@@ -3175,6 +3183,8 @@ const Layout = {
   openSide(s) { $('#' + s).classList.remove('collapsed'); if (innerWidth < 900) $('#' + (s === 'left' ? 'right' : 'left')).classList.add('collapsed'); localStorage.setItem('codex.side.' + s, '1'); Panels.refresh(); },
   closeSide(s) { $('#' + s).classList.add('collapsed'); localStorage.setItem('codex.side.' + s, '0'); },
   init() {
+    // ao girar o tablet ou estreitar a janela, não deixa os dois painéis espremerem o conteúdo
+    addEventListener('resize', debounce(() => { if (innerWidth < 900 && !$('#left').classList.contains('collapsed') && !$('#right').classList.contains('collapsed')) $('#right').classList.add('collapsed'); if (innerWidth < 600) { $('#left').classList.add('collapsed'); $('#right').classList.add('collapsed'); } }, 200));
     ['left', 'right'].forEach(s => {
       const pref = localStorage.getItem('codex.side.' + s); if (innerWidth < 900 || pref === '0' || (pref == null && s === 'right' && innerWidth < 1250)) $('#' + s).classList.add('collapsed');
       const w = +localStorage.getItem('codex.w.' + s); if (w) $('#' + s).style.width = w + 'px';
@@ -3387,7 +3397,7 @@ class PdfView {
   static sidecar(p) { return joinP(dirOf(p), '.anotacoes', baseOf(p) + '.json'); }
   constructor(tab, path, opts) {
     this.tab = tab; this.path = path; this.opts = opts;
-    const st = JSON.parse(localStorage.getItem('codex.pdftool') || '{}');
+    let st = {}; try { st = JSON.parse(localStorage.getItem('codex.pdftool') || '{}') || {}; } catch (e) { st = {}; }
     this.tool = st.tool || 'pen'; this.penColor = st.penColor || Settings.get('penColors')[0]; this.hlColor = st.hlColor || Settings.get('hlColors')[0];
     this.penW = st.penW || 1.6; this.hlW = st.hlW || 12; this.penOnly = Settings.get('penOnly'); this.fs = st.fs || 14;
     this.penStyle = st.penStyle || 'caneta'; this.hlStraight = st.hlStraight ?? true; this.eraserR = st.eraserR || 7; this.prevTool = st.prevTool || 'pen';
@@ -3442,7 +3452,7 @@ class PdfView {
     this.doc = await lib.getDocument({ data: this.bytes.slice() }).promise;
     if (!this.annLoaded) {
       this.annLoaded = true; const sc = PdfView.sidecar(this.path);
-      if (App.fileMap.has(sc)) { try { this.ann = JSON.parse(await App.vault.read(sc)); if (!this.ann.pages) this.ann.pages = {}; } catch (e) { this.annReadOnly = true; UI.toast('Não foi possível ler as anotações salvas deste PDF. Para não apagá-las, novas anotações não serão gravadas agora; use Sincronizar e reabra o PDF.', true); } }
+      if (App.fileMap.has(sc)) { try { this.ann = JSON.parse(await App.vault.read(sc)); if (!this.ann.pages) this.ann.pages = {}; this.base = this.keysOf(this.ann); } catch (e) { this.annReadOnly = true; UI.toast('Não foi possível ler as anotações salvas deste PDF. Para não apagá-las, novas anotações não serão gravadas agora; use Sincronizar e reabra o PDF.', true); } }
     }
     this.pages = [];
     for (let i = 0; i < this.doc.numPages; i++) {
@@ -3502,7 +3512,7 @@ class PdfView {
     if (rendered.length > 6) rendered.slice(0, rendered.length - 6).forEach(p => { p.done = 0; p.pdfc.width = p.pdfc.height = 0; p.ink.width = p.ink.height = 0; p.tl.innerHTML = ''; });
   }
   drawInk(pg) {
-    this.renderStickies(pg);
+    this.renderStickies(pg); this.thumbDirty(pg);
     if (!pg.ink.width) return; const c = pg.ink.getContext('2d'); const k = this.scale * pg.d;
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.ink.width, pg.ink.height); c.setTransform(k, 0, 0, k, 0, 0);
     (this.ann.pages[pg.i] || []).forEach(it => INK.draw(c, it));
@@ -3599,6 +3609,10 @@ class PdfView {
       let tool = this.tool; if (eraserBtn) tool = 'eraser';
       if (!DRAW_TOOLS.has(tool)) return;
       if (e.pointerType === 'touch' && (this.penOnly || this.penDown)) return; // rejeição de palma / dedo rola
+      if (this.cur && this.cur.pid !== e.pointerId) {
+        if (e.pointerType === 'touch') return; // segundo dedo ou palma durante um traço
+        if (this.cur.tool !== 'eraser') { const opg = this.cur.pg; this.cur = null; opg.live.width = opg.live.height = 1; this.drawInk(opg); } else this.cur = null; // caneta chegou: descarta o traço do dedo/palma
+      }
       if (e.button > 0 && e.button !== 5 && !(e.pointerType === 'pen' && e.button === 2)) return;
       e.preventDefault(); this.hideSelPop();
       const pt = toU(e, pg);
@@ -3628,7 +3642,7 @@ class PdfView {
         for (const ev of evs.length ? evs : [e]) { const pt = toU(ev, pg); const last = it.p[it.p.length - 1]; if (Math.hypot(pt[0] - last[0], pt[1] - last[1]) < 0.35) continue; it.p.push(pt); if (it.p.length >= 3) INK.penSeg(c, it, it.p.length - 1); }
         return;
       }
-      if (cur.straight) { const pt = toU(e, pg); it.p[1] = [pt[0], it.p[0][1], pt[2]]; const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); INK.draw(c, this.straightItem(cur)); return; }
+      if (cur.straight) { const pt = toU(e, pg); it.p[1] = [pt[0], it.p[0][1], pt[2]]; const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); const si = this.straightItem(cur); if (si) INK.draw(c, si); return; }
       if (cur.tool === 'hl') { for (const ev of evs.length ? evs : [e]) it.p.push(toU(ev, pg)); }
       else { let pt = toU(e, pg); if (e.shiftKey && cur.tool !== 'rect') { const a = it.p[0]; const ang = Math.round(Math.atan2(pt[1] - a[1], pt[0] - a[0]) / (Math.PI / 4)) * Math.PI / 4; const L = Math.hypot(pt[0] - a[0], pt[1] - a[1]); pt = [a[0] + L * Math.cos(ang), a[1] + L * Math.sin(ang)]; } it.p[1] = pt; }
       const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); INK.draw(c, it);
@@ -3636,33 +3650,41 @@ class PdfView {
     const end = e => {
       if (this.penSel && e.pointerId === this.penSel.pid) { this.penSel = null; return; }
       const cur = this.cur; if (!cur || e.pointerId !== cur.pid) return; this.cur = null; this.penDown = false; const pg = cur.pg;
-      if (cur.tool === 'eraser') { if (cur.erased.length) { this.pushUndo({ t: 'del', page: pg.i, items: cur.erased }); this.saveSoon(); } return; }
+      if (cur.tool === 'eraser') { if (cur.erased.length) { this.pushUndo({ t: 'del', page: pg.i, items: cur.erased, seq: true }); this.saveSoon(); } return; }
       let it = cur.it;
-      if (cur.straight) { pg.live.width = pg.live.height = 1; if (Math.abs(it.p[1][0] - it.p[0][0]) < 1.5) return; it = this.straightItem(cur); }
+      if (cur.straight) { pg.live.width = pg.live.height = 1; if (Math.abs(it.p[1][0] - it.p[0][0]) < 1.5) return; it = this.straightItem(cur); if (!it) return; }
       else if (cur.tool === 'pen') { const c = pg.ink.getContext('2d'); const k = this.scale * (pg.d || 1); c.setTransform(k, 0, 0, k, 0, 0); INK.style(c, it); if (it.p.length === 1) INK.draw(c, it); else INK.penEnd(c, it); }
       else { pg.live.width = pg.live.height = 1; if (['line', 'arrow', 'rect'].includes(cur.tool) && Math.hypot(it.p[1][0] - it.p[0][0], it.p[1][1] - it.p[0][1]) < 2) return; }
       if (it.p) it.p = it.p.map(q => q.map(v => Math.round(v * 100) / 100));
-      if (it.t === 'mark' || it.t === 'hl') it.ts = Date.now();
+      it.ts ||= Date.now();
       (this.ann.pages[pg.i] ||= []).push(it); this.pushUndo({ t: 'add', page: pg.i, item: it });
       if (cur.tool !== 'pen' || cur.straight) this.drawInk(pg);
       this.saveSoon();
     };
     this.pagesEl.addEventListener('pointerup', end); this.pagesEl.addEventListener('pointercancel', end);
-    this.scroller.addEventListener('click', e => {
-      if (e.target.closest('.sticky')) return;
-      if (this.tool !== 'sticky') {
-        if (DRAW_TOOLS.has(this.tool) && this.tool !== 'text') return; const s = getSelection(); if (s && !s.isCollapsed) return;
-        const pg = this.pages.find(p => { const b = p.el.getBoundingClientRect(); return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom; }); if (!pg) return; const r = pg.el.getBoundingClientRect();
-        const x = (e.clientX - r.left) / this.scale, y = (e.clientY - r.top) / this.scale;
+    /* toque/clique curto na página: cola post-it ou abre o menu de um trecho vinculado (funciona com mouse, dedo e caneta) */
+    const pageAt = (x, y) => this.pages.find(p => { const b = p.el.getBoundingClientRect(); return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom; });
+    let tapStart = null;
+    this.scroller.addEventListener('pointerdown', e => { tapStart = e.target.closest?.('.sticky,.text-edit') ? null : { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType }; }, true);
+    this.scroller.addEventListener('pointerup', e => {
+      const ts = tapStart; tapStart = null;
+      if (!ts || ts.id !== e.pointerId || Math.hypot(e.clientX - ts.x, e.clientY - ts.y) > 8 || performance.now() - ts.t > 600) return;
+      if (e.target.closest?.('.sticky,.text-edit')) return;
+      const pg = pageAt(e.clientX, e.clientY); if (!pg) return; const r = pg.el.getBoundingClientRect();
+      const x = (e.clientX - r.left) / this.scale, y = (e.clientY - r.top) / this.scale;
+      if (this.tool === 'sticky') { setTimeout(() => this.addSticky(pg, x, y), 0); return; }
+      if (DRAW_TOOLS.has(this.tool)) return;
+      setTimeout(() => {
+        const s = getSelection(); if (s && !s.isCollapsed && this.pagesEl.contains(s.anchorNode)) return;
         const it = (this.ann.pages[pg.i] || []).slice().reverse().find(q => q.t === 'link' && INK.hit(q, x, y, 1));
-        if (it) this.linkMenu(e, pg, it);
-        return;
-      } const pgEl = e.target.closest('.pg'); if (!pgEl) return;
-      const pg = this.pages[+pgEl.dataset.i]; const r = pgEl.getBoundingClientRect(); this.addSticky(pg, (e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale);
+        if (it) this.linkMenu({ clientX: e.clientX, clientY: e.clientY }, pg, it);
+      }, 30);
     });
     /* Apple Pencil não deve rolar a página; dedo rola quando “só caneta” está ligado */
     const blockScroll = e => {
-      if (this.tool === 'hand') return false;
+      if (this.tool === 'hand' || this.tool === 'sticky') return false;
+      if (e.target.closest?.('.sticky,.text-edit')) return false;
+      if (this.tool === 'select' && !this.penSel && !e.target.closest?.('.textLayer')) return false;
       if (this.cur || this.penSel) return true; // traço em curso: nem caneta nem palma rolam a página
       if ((DRAW_TOOLS.has(this.tool) || this.tool === 'select') && [...e.touches].some(t => t.touchType === 'stylus')) return true; // Apple Pencil
       return e.type === 'touchstart' && performance.now() - (this.stylusAt || 0) < 400; // S Pen (Android não informa touchType)
@@ -3735,8 +3757,7 @@ class PdfView {
     const COLORS = ['#fff2a8', '#ffd6a5', '#ffc6d9', '#d0f4de', '#cde7ff', '#e4d4ff'];
     const ta = h('textarea', { class: 'stk-ta', placeholder: 'Escreva sua anotação…', value: it.text || '' });
     ta.value = it.text || '';
-    const save = debounce(() => this.saveSoon(), 500);
-    ta.addEventListener('input', () => { it.text = ta.value; it.mt = Date.now(); save(); });
+    ta.addEventListener('input', () => { it.text = ta.value; it.mt = Date.now(); (this.touched ||= new Set()).add(it); this.saveSoon(); });
     ta.addEventListener('pointerdown', e => e.stopPropagation());
     const toggle = () => { it.open = !it.open; this.renderStickies(pg); this.saveSoon(); if (it.open) setTimeout(() => ta.focus(), 30); };
     const del = async () => {
@@ -3745,7 +3766,7 @@ class PdfView {
       this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.renderStickies(pg); this.saveSoon();
     };
     const head = h('div', { class: 'stk-head', title: 'Arraste para mover' },
-      h('span', { class: 'stk-colors' }, ...COLORS.map(c => h('button', { class: 'stk-c', style: { background: c }, title: 'Cor do post-it', onclick: e => { e.stopPropagation(); it.c = c; this.renderStickies(pg); this.saveSoon(); } }))),
+      h('span', { class: 'stk-colors' }, ...COLORS.map(c => h('button', { class: 'stk-c', style: { background: c }, title: 'Cor do post-it', onclick: e => { e.stopPropagation(); it.c = c; (this.touched ||= new Set()).add(it); this.renderStickies(pg); this.saveSoon(); } }))),
       h('button', { class: 'stk-b', title: 'Recolher', html: '–', onclick: e => { e.stopPropagation(); toggle(); } }),
       h('button', { class: 'stk-b', title: 'Excluir post-it', html: icon('trash'), onclick: e => { e.stopPropagation(); del(); } }));
     const pin = h('button', { class: 'stk-pin', title: 'Abrir post-it', html: icon('sticky'), onclick: e => { e.stopPropagation(); if (!moved) toggle(); } });
@@ -3754,7 +3775,7 @@ class PdfView {
     let drag = null, moved = false;
     const down = e => { if (e.target.closest('.stk-c,.stk-b')) return; e.preventDefault(); e.stopPropagation(); moved = false; const r = pg.el.getBoundingClientRect(); drag = { id: e.pointerId, dx: e.clientX - (r.left + it.x * this.scale), dy: e.clientY - (r.top + it.y * this.scale), x0: e.clientX, y0: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (er) { } };
     const move = e => { if (!drag || e.pointerId !== drag.id) return; if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 4) moved = true; if (!moved) return; const r = pg.el.getBoundingClientRect(); it.x = Math.max(0, Math.min(pg.w - 20, (e.clientX - drag.dx - r.left) / this.scale)); it.y = Math.max(0, Math.min(pg.h - 20, (e.clientY - drag.dy - r.top) / this.scale)); el.style.left = (it.x / pg.w * 100) + '%'; el.style.top = (it.y / pg.h * 100) + '%'; };
-    const up = e => { if (!drag || e.pointerId !== drag.id) return; drag = null; if (moved) { it.x = Math.round(it.x * 100) / 100; it.y = Math.round(it.y * 100) / 100; this.saveSoon(); setTimeout(() => moved = false, 50); } };
+    const up = e => { if (!drag || e.pointerId !== drag.id) return; drag = null; if (moved) { it.x = Math.round(it.x * 100) / 100; it.y = Math.round(it.y * 100) / 100; (this.touched ||= new Set()).add(it); this.saveSoon(); setTimeout(() => moved = false, 50); } };
     for (const t of [head, pin]) { t.addEventListener('pointerdown', down); t.addEventListener('pointermove', move); t.addEventListener('pointerup', up); t.addEventListener('pointercancel', up); }
     el.addEventListener('pointerdown', e => e.stopPropagation());
     return el;
@@ -3818,7 +3839,7 @@ class PdfView {
         lines.push(`${n}. <mark style="background:${col}">${esc(txt || '(destaque sem texto reconhecível, por exemplo sobre imagem ou PDF escaneado)')}</mark> — ${pl}`, '');
       }
       const now = new Date(); const dt = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const B = '%% revisão automática: início. O que estiver entre esta marca e a de fim é refeito ao clicar em Revisão; escreva suas observações fora delas. %%', E = '%% revisão automática: fim %%';
+      const B = '%% revisão automática: início (refeita a cada clique; anote fora das marcas) %%', E = '%% revisão automática: fim %%';
       const block = [B, `*Atualizado em ${dt} — ${n} destaque(s)*`, '', ...lines, E].join('\n');
       const p = this.reviewPath(); const exists = App.fileMap.has(p) || await App.vault.exists(p).catch(() => false);
       if (exists) {
@@ -3826,11 +3847,11 @@ class PdfView {
       } else {
         await App.writeNote(p, `# Revisão — ${stemOf(this.path)}\n\nFonte: [[${link}]]\n\n${block}\n`); App.renderTree?.();
       }
-      Loading.hide(); if (opt.silent) return;
+      if (!opt.silent) Loading.hide(); if (opt.silent) return;
       UI.toast(`Revisão atualizada: ${n} destaque(s).`);
       const open = App.tabs.find(t => t.path === p);
       if (!open) App.openBeside(p); else App.open(p);
-    } catch (e) { Loading.hide(); console.error(e); UI.toast('Não foi possível gerar a revisão: ' + (e.message || e)); }
+    } catch (e) { if (!opt.silent) Loading.hide(); console.error(e); UI.toast('Não foi possível gerar a revisão: ' + (e.message || e)); }
   }
   /* faixa da linha de texto sob o ponto (unidades da página) */
   lineBand(pg, [x, y]) {
@@ -3848,22 +3869,24 @@ class PdfView {
   }
   straightItem(cur) {
     const it = cur.it, b = cur.band; let xa = Math.min(it.p[0][0], it.p[1][0]), xb = Math.max(it.p[0][0], it.p[1][0]);
-    if (b) { xa = Math.max(xa, b.x0); xb = Math.min(xb, b.x1); if (xb < xa) xb = xa; return { t: 'mark', c: it.c, rects: [[+xa.toFixed(2), +b.y0.toFixed(2), +(xb - xa).toFixed(2), +(b.y1 - b.y0).toFixed(2)]] }; }
+    if (b) { xa = Math.max(xa, b.x0); xb = Math.min(xb, b.x1); if (xb - xa < 1) return null; return { t: 'mark', c: it.c, rects: [[+xa.toFixed(2), +b.y0.toFixed(2), +(xb - xa).toFixed(2), +(b.y1 - b.y0).toFixed(2)]] }; }
     return { t: 'hl', c: it.c, w: it.w, p: [[xa, it.p[0][1]], [xb, it.p[0][1]]] };
   }
   eraseAt(pg, [x, y]) {
     const items = this.ann.pages[pg.i]; if (!items) return; const r = (this.eraserR || 7) / this.scale; let changed = false;
-    for (let j = items.length - 1; j >= 0; j--) if (INK.hit(items[j], x, y, r)) { this.cur.erased.push({ item: items[j], idx: j }); items.splice(j, 1); changed = true; }
+    for (let j = items.length - 1; j >= 0; j--) if (INK.hit(items[j], x, y, r)) { this.cur.erased.push({ item: items[j], idx: j }); this.favSync([items[j]], false); items.splice(j, 1); changed = true; }
     if (changed) this.drawInk(pg);
   }
+  favSync(items, present) { let ch = false; for (const it of items) { if (it?.t !== 'link' || !it.fav) continue; const has = App.bookmarks.includes(it.fav); if (present && !has) { App.bookmarks.push(it.fav); ch = true; } if (!present && has) { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); ch = true; } } if (ch) { App.saveBookmarks(); Panels.refresh(); } }
   pushUndo(op) { this.undo.push(op); if (this.undo.length > 300) this.undo.shift(); this.redo = []; }
   applyOp(op, inverse) {
     const arr = (this.ann.pages[op.page] ||= []);
     const removeItem = it => { const i = arr.lastIndexOf(it); if (i >= 0) arr.splice(i, 1); };
-    if (op.t === 'add') { if (inverse) removeItem(op.item); else arr.push(op.item); }
+    if (op.t === 'add') { if (inverse) removeItem(op.item); else arr.push(op.item); this.favSync([op.item], !inverse); }
     else if (op.t === 'del') {
-      if (inverse) op.items.slice().sort((a, b) => a.idx - b.idx).forEach(x => arr.splice(Math.min(x.idx, arr.length), 0, x.item));
+      if (inverse) (op.seq ? op.items.slice().reverse() : op.items.slice().sort((a, b) => a.idx - b.idx)).forEach(x => arr.splice(Math.min(x.idx, arr.length), 0, x.item));
       else op.items.forEach(x => removeItem(x.item));
+      this.favSync(op.items.map(x => x.item), !!inverse);
     }
     const pg = this.pages[op.page]; pg && this.drawInk(pg); this.saveSoon();
   }
@@ -3871,10 +3894,36 @@ class PdfView {
   doRedo() { const op = this.redo.pop(); if (!op) return; this.applyOp(op, false); this.undo.push(op); }
   saveSoonD = debounce(() => this.saveAnn(), 1200);
   saveSoon() { this.annDirty = true; this.saveSoonD(); }
+  static ikey(it) { return it.ts ? it.t + ':' + it.ts : JSON.stringify(it); }
+  keysOf(ann) { const s = new Set(); for (const [k, arr] of Object.entries(ann.pages || {})) (arr || []).forEach(it => s.add(k + '|' + PdfView.ikey(it))); return s; }
+  /* junta alterações feitas em outro aparelho desde a última leitura (3 vias: base, local, remoto) */
+  mergeRemote(remote) {
+    const base = this.base || new Set(); let changed = false;
+    const pages = new Set([...Object.keys(remote.pages || {}), ...Object.keys(this.ann.pages)]);
+    for (const k of pages) {
+      const loc = (this.ann.pages[k] ||= []); const rem = remote.pages?.[k] || [];
+      const locKeys = new Set(loc.map(PdfView.ikey)), remKeys = new Set(rem.map(PdfView.ikey));
+      for (const it of rem) { const key = PdfView.ikey(it); if (!locKeys.has(key) && !base.has(k + '|' + key)) { loc.push(it); changed = true; } }
+      for (let i = loc.length - 1; i >= 0; i--) { const key = PdfView.ikey(loc[i]); if (base.has(k + '|' + key) && !remKeys.has(key) && !this.touched?.has(loc[i])) { loc.splice(i, 1); changed = true; } }
+    }
+    return changed;
+  }
+  redrawAll() { this.pages.forEach(p => this.drawInk(p)); }
+  async readRemoteAnn() { const sc = PdfView.sidecar(this.path); if (!(App.fileMap.has(sc) || await App.vault.exists(sc).catch(() => false))) return null; try { return JSON.parse(await App.vault.read(sc)); } catch (e) { return null; } }
+  async syncAnn() { // chamado ao sincronizar o cofre
+    if (this.annReadOnly || this.annDirty) return; const remote = await this.readRemoteAnn(); if (!remote) return;
+    if (this.mergeRemote(remote)) { this.redrawAll(); UI.toast('Anotações deste PDF atualizadas com as de outro aparelho.'); }
+    this.base = this.keysOf(this.ann);
+  }
   async saveAnn() {
     if (!this.annDirty) return; if (this.annReadOnly) { this.annDirty = false; return; } this.annDirty = false;
     const sc = PdfView.sidecar(this.path);
-    try { Status.saving(true); await App.writeQueued(sc, JSON.stringify(this.ann)); App.addFile(sc); Status.saving(false); } catch (e) { this.annDirty = true; Status.saving(false, true); UI.error(e); }
+    try {
+      Status.saving(true);
+      if (!this.structChanged) { const remote = await this.readRemoteAnn(); if (remote && this.mergeRemote(remote)) { this.redrawAll(); UI.toast('Anotações de outro aparelho foram incorporadas a este PDF.'); } }
+      this.structChanged = false;
+      await App.writeQueued(sc, JSON.stringify(this.ann)); App.addFile(sc); this.base = this.keysOf(this.ann); this.touched = new Set(); Status.saving(false);
+    } catch (e) { this.annDirty = true; Status.saving(false, true); UI.error(e); }
   }
   async flush() { if (this.textEd) this.commitText(); this.saveSoonD.cancel(); await this.saveAnn(); }
   /* ---------- texto ---------- */
@@ -3948,19 +3997,19 @@ class PdfView {
     this.drawInk(pg); this.saveSoon(); return { it, pg };
   }
   async linkToNote(rects, text, ex) {
-    const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; const pageNo = pg.i + 1;
+    const pre = ex || { pg: [...this.selRects(rects).keys()][0] }; if (!pre.pg) return; const pageNo = pre.pg.i + 1;
     const notes = [...App.notes.values()].sort((a, b) => b.mtime - a.mtime).map(n => n.path);
     const quote = `\n> [!quote] ${stemOf(this.path)}, p. ${pageNo}\n` + text.split('\n').map(l => '> ' + l).join('\n') + `\n> [[${App.linkText(this.path)}#page=${pageNo}|abrir no PDF]]\n`;
-    const done = async p => { await App.editNote(p, cur => cur.replace(/\s*$/, '') + '\n' + quote); if (!it.notes.includes(p)) it.notes.push(p); this.saveSoon(); this.drawInk(pg); UI.toast('Trecho vinculado a “' + stemOf(p) + '”.'); };
+    const done = async p => { const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; await App.editNote(p, cur => cur.replace(/\s*$/, '') + '\n' + quote); if (!it.notes.includes(p)) it.notes.push(p); this.saveSoon(); this.drawInk(pg); UI.toast('Trecho vinculado a “' + stemOf(p) + '”.'); };
     UI.picker({ placeholder: 'Vincular este trecho a qual nota? (Shift+Enter cria nova)', hint: 'O trecho é citado na nota com um link de volta para esta página do PDF',
       items: q => notes.map(p => ({ p, m: fuzzy(q, stemOf(p)) })).filter(x => x.m).sort((a, b) => q ? b.m.score - a.m.score : 0).slice(0, 60).map(x => x.p),
       render: p => icon('filetext') + '<span class="main">' + esc(stemOf(p)) + '</span><span class="sub">' + esc(dirOf(p)) + '</span>',
       onPick: done, onEmptyEnter: async q => { const p = await App.createNote(dirOf(this.path), q || ('Notas — ' + stemOf(this.path)), '', { open: false }); await done(p); } });
   }
   async tagSelection(rects, text, ex) {
-    const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r;
+    if (!ex && !this.selRects(rects).size) return;
     const all = [...(Panels.allTags?.() || new Map()).keys()];
-    const add = async t => { t = String(t || '').trim().replace(/^#+/, '').replace(/\s+/g, '-'); if (!t) return; if (!it.tags.includes(t)) it.tags.push(t); this.saveSoon(); this.drawInk(pg); await this.buildReview({ silent: true }); UI.toast('Tag #' + t + ' aplicada ao trecho.'); };
+    const add = async t => { t = String(t || '').trim().replace(/^#+/, '').replace(/\s+/g, '-'); if (!t) return; const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; if (!it.tags.includes(t)) it.tags.push(t); this.saveSoon(); this.drawInk(pg); await this.buildReview({ silent: true }); UI.toast('Tag #' + t + ' aplicada ao trecho.'); };
     UI.picker({ placeholder: 'Tag para este trecho (Enter cria se não existir)', hint: 'As tags dos trechos entram no arquivo de revisão e aparecem no painel de tags e na busca',
       items: q => { const n = norm(q.replace(/^#/, '')); const l = all.filter(t => !n || norm(t).includes(n)).slice(0, 80); if (n && !all.some(t => norm(t) === n)) l.unshift('＋' + q.replace(/^#/, '')); return l; },
       render: t => icon('hash') + '<span class="main">' + esc(t.startsWith('＋') ? 'Criar #' + t.slice(1) : '#' + t) + '</span>',
@@ -3979,7 +4028,7 @@ class PdfView {
     if (it.fav) items.push({ label: 'Remover dos favoritos', icon: 'star', action: () => { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); it.fav = null; this.saveSoon(); } });
     const rr = it.rects; const text = it.txt || '';
     items.push('-', { label: 'Vincular a outra nota…', icon: 'link', action: () => this.linkToNote([], text, { it, pg }) }, { label: 'Adicionar tag…', icon: 'hash', action: () => this.tagSelection([], text, { it, pg }) },
-      { label: 'Remover este vínculo', icon: 'trash', danger: true, action: () => { const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); if (it.fav) { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); } this.drawInk(pg); this.saveSoon(); } });
+      { label: 'Remover este vínculo', icon: 'trash', danger: true, action: () => { const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.favSync([it], false); this.drawInk(pg); this.saveSoon(); } });
     UI.menu(e.clientX, e.clientY, items);
   }
   sendToNote(text, pageNo) {
@@ -4015,6 +4064,10 @@ class PdfView {
   }
   markFindHits(pg) { const q = this.findQ; pg.tl.querySelectorAll('span').forEach(s => s.classList.toggle('hit', !!q && norm(s.textContent).includes(q))); }
   /* ---------- miniaturas ---------- */
+  thumbDirty(pg) {
+    const th = this.thumbs?.querySelector(`.th[data-i="${pg.i}"]`); if (!th || !th.dataset.r || this.thumbs.classList.contains('hidden')) return;
+    clearTimeout(this._thT); this._thT = setTimeout(() => { th.dataset.r = ''; this.thumbIO?.unobserve(th); this.thumbIO?.observe(th); }, 800);
+  }
   renderThumbs() {
     if (this.thumbs.classList.contains('hidden') || !this.pages.length) return; this.thumbs.innerHTML = '';
     this.thumbIO?.disconnect();
@@ -4036,6 +4089,8 @@ class PdfView {
       '-', { label: `Excluir a página ${at + 1}`, icon: 'trash', danger: true, action: () => this.deletePage(at) }]);
   }
   async rewrite(fn, remap, keepPage) {
+    if (this.annReadOnly) { UI.toast('As anotações salvas deste PDF não puderam ser lidas. Para não desalinhá-las, inserir ou excluir páginas fica bloqueado até que voltem a ser lidas.', true); return; }
+    this.structChanged = true;
     await this.flush(); Loading.show('Atualizando o PDF…');
     try {
       const L = await LIBS.pdflib(); const doc = await L.PDFDocument.load(this.bytes, { ignoreEncryption: true });
@@ -4089,7 +4144,10 @@ class PdfView {
       { label: 'Mover para…', icon: 'folder', action: () => App.promptMove(this.path) },
       '-', { label: 'Excluir PDF', icon: 'trash', danger: true, action: () => App.remove(this.path) }]);
   }
-  onRename(np) { this.path = np; const nh = viewHead(this.tab, np, []); this.head.querySelector('.crumb').innerHTML = nh.querySelector('.crumb').innerHTML; }
+  onRename(np) {
+    const op = this.path; for (const arr of Object.values(this.ann.pages)) for (const it of arr || []) if (it.t === 'link' && it.fav && it.fav.startsWith(op + '#')) { it.fav = np + it.fav.slice(op.length); this.annDirty = true; }
+    if (this.annDirty) this.saveSoon();
+    this.path = np; const nh = viewHead(this.tab, np, []); this.head.querySelector('.crumb').innerHTML = nh.querySelector('.crumb').innerHTML; }
   fitWidth() { return Math.min(1.8, Math.max(0.4, (this.scroller.clientWidth - 40) / Math.max(...this.pages.map(p => p.w)))); }
   onShow() {
     requestAnimationFrame(() => {
@@ -4097,8 +4155,8 @@ class PdfView {
       this.pages.filter(p => p.vis).forEach(p => this.renderPage(p));
     });
   }
-  onHide() { this.hideSelPop(); }
-  destroy() { this.ro?.disconnect(); this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
+  onHide() { this.hideSelPop(); this.closePop(); }
+  destroy() { this.closePop(); this.ro?.disconnect(); this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
 }
 
 /* ===================== CADERNOS (nota → PDF, em branco, imagem → PDF) ===================== */
@@ -4542,7 +4600,7 @@ const Shell = {
   async reloadVault() {
     if (!App.vault) return; for (const t of App.tabs) await t.view?.flush?.();
     Loading.show('Sincronizando…');
-    try { await App.reload(); App.renderTree(); Panels.refresh(); for (const t of App.tabs) { if (t.view instanceof NoteView && !t.view.dirty && App.notes.has(t.path)) t.view.externalUpdate(App.notes.get(t.path).text); } UI.toast('Cofre atualizado.'); }
+    try { await App.reload(); App.renderTree(); Panels.refresh(); for (const t of App.tabs) { if (t.view instanceof NoteView && !t.view.dirty && App.notes.has(t.path)) t.view.externalUpdate(App.notes.get(t.path).text); if (t.view?.syncAnn) await t.view.syncAnn(); } UI.toast('Cofre atualizado.'); }
     catch (e) { UI.error(e); } finally { Loading.hide(); }
   },
   async start() {
