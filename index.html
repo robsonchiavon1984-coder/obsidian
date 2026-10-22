@@ -515,6 +515,54 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .sel-pop .sel-dot{width:22px;height:22px;border-radius:50%;padding:0;border:2px solid transparent}
 .sel-pop .sel-dot.on{border-color:var(--text)}
 .sel-pop .sel-dot:hover{transform:scale(1.15);background-blend-mode:normal}
+/* ---- anotador: paleta, tipos de caneta, tamanhos ---- */
+.pdf-tb .grp:empty{display:none}
+.swatch.more{background:conic-gradient(#e53935,#fdd835,#43a047,#1e88e5,#8e24aa,#e53935);border:2px solid var(--bg2);box-shadow:0 0 0 1px var(--border);padding:0}
+.pdf-pop{position:fixed;z-index:170;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:10px;max-width:min(330px,calc(100vw - 16px))}
+.pal-grid{display:grid;grid-template-columns:repeat(6,34px);gap:8px}
+.pal-c{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0}
+.pal-c.on{border-color:var(--text);box-shadow:0 0 0 2px var(--bg2) inset}
+.pal-custom{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer}
+.pal-custom input{width:34px;height:34px;border:0;padding:0;background:none}
+.btn.sm.pen-style{gap:4px;white-space:nowrap}
+.btn.sm.on-tog{background:var(--accent-bg);border-color:var(--accent)}
+.pop-list{display:flex;flex-direction:column;gap:2px;min-width:250px}
+.pop-item{display:flex;align-items:center;gap:10px;border:0;background:none;padding:6px 8px;border-radius:7px;cursor:pointer;text-align:left;color:var(--text)}
+.pop-item:hover,.pop-item.on{background:var(--accent-bg)}
+.pop-item span{display:flex;flex-direction:column}
+.pop-item small{color:var(--muted);font-size:11.5px}
+.pen-prev{width:120px;height:28px;flex:none;background:#fff;border-radius:5px;border:1px solid var(--border)}
+.sz-prev{display:block;width:220px;height:48px;background:#fff;border-radius:6px;border:1px solid var(--border);margin-bottom:8px}
+.sz-row{display:flex;align-items:center;gap:8px}
+.sz-row input[type=range]{flex:1;min-width:150px;height:28px}
+.sz-val{font-size:13px;min-width:52px;text-align:right}
+.sz-presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-width:230px}
+.pal-sz{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;min-width:34px;min-height:30px}
+.pal-sz.on{background:var(--accent-bg);border-color:var(--accent)}
+/* ---- post-its no PDF ---- */
+.pg .stickies{position:absolute;inset:0;pointer-events:none;z-index:4}
+.sticky{position:absolute;pointer-events:auto;--stk:#fff2a8}
+.stk-pin{width:30px;height:30px;border-radius:5px;border:1px solid rgba(0,0,0,.25);background:var(--stk);box-shadow:0 2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:grab;padding:0;color:#5a4a00;touch-action:none}
+.stk-pin svg.i{width:17px;height:17px}
+.sticky.open .stk-pin{display:none}
+.stk-card{display:none;width:230px;background:var(--stk);border:1px solid rgba(0,0,0,.2);border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.35);color:#222}
+.sticky.open .stk-card{display:block}
+.stk-head{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 6px;cursor:grab;touch-action:none;border-bottom:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.05)}
+.stk-colors{display:flex;gap:3px;flex:1}
+.stk-c{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.3);padding:0;cursor:pointer}
+.stk-b{border:0;background:none;width:26px;height:26px;border-radius:4px;cursor:pointer;color:#333;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.stk-b:hover{background:rgba(0,0,0,.1)}
+.stk-b svg.i{width:15px;height:15px}
+.stk-ta{display:block;width:100%;min-height:120px;resize:vertical;border:0;background:transparent;color:#222;font:14px/1.45 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:8px 9px;outline:none;text-align:justify;box-sizing:border-box}
+.pdfv[data-tool="sticky"] .live{cursor:copy}
+.tree-item.bm-excerpt{flex-wrap:wrap;white-space:normal;height:auto;padding-top:5px;padding-bottom:5px}
+.tree-item.bm-excerpt .nm{white-space:normal;font-style:italic;line-height:1.35;flex:1;min-width:0}
+.bm-sub{width:100%;padding-left:22px;font-size:11.5px;color:var(--muted)}
+.sel-pop button svg.i{width:14px;height:14px;vertical-align:-2px}
+.sticky.flip .stk-card{transform:translateX(calc(-100% + 30px))}
+.sticky.up .stk-card{position:absolute;bottom:0}
+.sticky.up.flip .stk-card{right:-30px;transform:none}
+.sticky.up:not(.flip) .stk-card{left:0}
 
 </style>
 </head>
@@ -610,6 +658,8 @@ const ICONS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
   save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+  sticky: '<path d="M4 4h16v10l-6 6H4z"/><path d="M14 20v-6h6"/>',
+  review: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
   quote: '<path d="M3 21c3 0 7-1 7-8V5H3v8h4c0 4-2 5-4 5zM14 21c3 0 7-1 7-8V5h-7v8h4c0 4-2 5-4 5z"/>',
   template: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
   listol: '<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
@@ -1497,7 +1547,7 @@ const App = {
       for (const [p, f] of [...this.fileMap]) if (p === from || p.startsWith(from + '/')) { this.fileMap.delete(p); const np = to + p.slice(from.length); this.fileMap.set(np, { ...f, path: np }); }
       this.addFile(to, this.fileMap.get(to)?.type || 'file');
       for (const [o, nw] of moved) { if (this.notes.has(o)) { const n = this.notes.get(o); this.notes.delete(o); this.notes.set(nw, { ...n, path: nw }); } if (this.blobs.has(o)) { this.blobs.set(nw, this.blobs.get(o)); this.blobs.delete(o); } }
-      this.bookmarks = this.bookmarks.map(b => moved.get(b) || (b === from ? to : b)); this.saveBookmarks();
+      this.bookmarks = this.bookmarks.map(b => { const bp = b.split('::')[0].split('#')[0]; const np = moved.get(bp) || (bp === from ? to : null); return np ? np + b.slice(bp.length) : b; }); this.saveBookmarks();
       if (this.expanded.has(from)) { this.expanded.delete(from); this.expanded.add(to); }
       this.rebuildNames();
       for (const t of this.tabs) { const np = moved.get(t.path); if (np) { t.path = np; t.hist = t.hist.map(x => moved.get(x) || x); t.view?.onRename?.(np); } }
@@ -2979,9 +3029,14 @@ const Panels = {
   },
   renderBookmarks() {
     const box = $('#pane-bookmarks .pane-scroll'); box.innerHTML = '';
-    const bm = App.bookmarks.filter(b => App.fileMap.has(b));
-    if (!bm.length) box.append(h('div', { class: 'empty', text: 'Nenhum favorito. Use o menu de contexto de um arquivo para adicionar.' }));
-    bm.forEach(b => box.append(h('div', { class: 'tree-item', onclick: () => App.open(b), oncontextmenu: e => { e.preventDefault(); UI.menu(e.clientX, e.clientY, [{ label: 'Remover dos favoritos', action: () => App.toggleBookmark(b) }]); } }, h('span', { class: 'chev', html: icon('star') }), h('span', { class: 'nm', text: extOf(b) === 'md' ? stemOf(b) : baseOf(b) }))));
+    const pathOf = b => b.split('::')[0].split('#')[0];
+    const bm = App.bookmarks.filter(b => App.fileMap.has(pathOf(b)));
+    if (!bm.length) box.append(h('div', { class: 'empty', text: 'Nenhum favorito. Use o menu de contexto de um arquivo, ou selecione um trecho de PDF e toque em Favorito.' }));
+    bm.forEach(b => {
+      const p = pathOf(b), page = +(/#page=(\d+)/.exec(b) || [])[1] || 0, label = b.includes('::') ? b.split('::').slice(1).join('::') : null;
+      box.append(h('div', { class: 'tree-item' + (label ? ' bm-excerpt' : ''), title: label ? `${baseOf(p)}, p. ${page}` : p, onclick: () => App.open(p, page ? { page } : {}), oncontextmenu: e => { e.preventDefault(); UI.menu(e.clientX, e.clientY, [{ label: 'Remover dos favoritos', action: () => { App.bookmarks = App.bookmarks.filter(x => x !== b); App.saveBookmarks(); Panels.refresh(); } }]); } },
+        h('span', { class: 'chev', html: icon('star') }), h('span', { class: 'nm', text: label ? '“' + label + '”' : (extOf(p) === 'md' ? stemOf(p) : baseOf(p)) }), label ? h('span', { class: 'bm-sub', text: `${stemOf(p)}, p. ${page}` }) : ''));
+    });
   }
 };
 
@@ -3264,19 +3319,32 @@ class GraphView {
 }
 
 /* ===================== ANOTADOR DE PDF (CANETA / APPLE PENCIL) ===================== */
+const PEN_STYLES = [['caneta', 'Caneta esferográfica', 'Sensível à pressão da caneta'], ['tinteiro', 'Caneta tinteiro', 'Traço caligráfico: varia com a direção'], ['lapis', 'Lápis', 'Traço fino e mais claro'], ['marcador', 'Marcador', 'Espessura sempre igual'], ['pincel', 'Pincel', 'Muito sensível à pressão']];
+const PEN_PALETTE = ['#000000', '#3c3c3c', '#6b6b6b', '#9e9e9e', '#1b1b1b', '#0b3d91', '#1f5fd6', '#2f8cff', '#00a3c4', '#0c7c7c', '#178a3c', '#45b649', '#8bc34a', '#556b2f', '#d22d2d', '#b3001b', '#ff4d4d', '#e91e63', '#ff7eb6', '#8a3fd1', '#5e35b1', '#b388ff', '#e07b00', '#ff9800', '#ffc107', '#8d5524', '#a0522d', '#c8a165', '#ffffff', '#f5e6c8'];
+const HL_PALETTE = ['#ffe600', '#fff176', '#ffd54f', '#ffa94d', '#ff8a65', '#ff8ad8', '#f48fb1', '#ce93d8', '#b197fc', '#90caf9', '#5ad1ff', '#80deea', '#7cf06a', '#a5d6a7', '#c5e1a5', '#e6ee9c', '#bcaaa4', '#cfd8dc'];
 const INK = {
-  wOf(it, pt) { return it.pr ? it.w * (0.3 + (pt[2] ?? 0.5) * 1.15) : it.w; },
+  wOf(it, pt, prev) {
+    const pr = it.pr ? (pt[2] ?? 0.5) : 0.5;
+    switch (it.ps) {
+      case 'marcador': return it.w;
+      case 'lapis': return it.w * (0.55 + pr * 0.5);
+      case 'pincel': return it.w * (0.12 + pr * 2.1);
+      case 'tinteiro': { let f = 0.7; if (prev && (pt[0] !== prev[0] || pt[1] !== prev[1])) { const a = Math.atan2(pt[1] - prev[1], pt[0] - prev[0]); f = 0.22 + 1.05 * Math.abs(Math.sin(a - Math.PI / 4)); } return it.w * f * (it.pr ? 0.6 + pr * 0.8 : 1); }
+      default: return it.pr ? it.w * (0.3 + pr * 1.15) : it.w;
+    }
+  },
   mid(a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, ((a[2] ?? .5) + (b[2] ?? .5)) / 2]; },
   penSeg(ctx, it, i) { // desenha o trecho que termina no ponto i (i >= 2)
     const p = it.p; const a = i === 2 ? p[0] : INK.mid(p[i - 2], p[i - 1]); const b = INK.mid(p[i - 1], p[i]);
-    ctx.lineWidth = INK.wOf(it, p[i - 1]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(p[i - 1][0], p[i - 1][1], b[0], b[1]); ctx.stroke();
+    ctx.lineWidth = INK.wOf(it, p[i - 1], p[Math.max(0, i - 3)]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(p[i - 1][0], p[i - 1][1], b[0], b[1]); ctx.stroke();
   },
-  penEnd(ctx, it) { const p = it.p, n = p.length; if (n < 2) return; const a = n === 2 ? p[0] : INK.mid(p[n - 2], p[n - 1]); ctx.lineWidth = INK.wOf(it, p[n - 1]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(p[n - 1][0], p[n - 1][1]); ctx.stroke(); },
-  style(ctx, it) { ctx.strokeStyle = it.c; ctx.fillStyle = it.c; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = it.t === 'hl' || it.t === 'mark' ? 0.38 : 1; },
+  penEnd(ctx, it) { const p = it.p, n = p.length; if (n < 2) return; const a = n === 2 ? p[0] : INK.mid(p[n - 2], p[n - 1]); ctx.lineWidth = INK.wOf(it, p[n - 1], p[Math.max(0, n - 3)]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(p[n - 1][0], p[n - 1][1]); ctx.stroke(); },
+  lighten(c, f) { const m = /^#?([0-9a-f]{6})$/i.exec(c || ''); if (!m) return c; const n = parseInt(m[1], 16); const ch = s => Math.round(((n >> s) & 255) + (255 - ((n >> s) & 255)) * f); return `rgb(${ch(16)},${ch(8)},${ch(0)})`; },
+  style(ctx, it) { const c = it.t === 'pen' && it.ps === 'lapis' ? INK.lighten(it.c, 0.28) : it.c; ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = it.t === 'hl' || it.t === 'mark' ? 0.38 : 1; },
   draw(ctx, it) {
     ctx.save(); INK.style(ctx, it); const p = it.p;
     if (it.t === 'pen') {
-      if (p.length === 1) { ctx.beginPath(); ctx.arc(p[0][0], p[0][1], INK.wOf(it, p[0]) / 2, 0, 7); ctx.fill(); }
+      if (p.length === 1) { ctx.beginPath(); ctx.arc(p[0][0], p[0][1], Math.max(0.3, INK.wOf(it, p[0])) / 2, 0, 7); ctx.fill(); }
       else { for (let i = 2; i < p.length; i++) INK.penSeg(ctx, it, i); INK.penEnd(ctx, it); }
     } else if (it.t === 'hl') {
       ctx.lineWidth = it.w; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
@@ -3290,6 +3358,14 @@ const INK = {
       ctx.font = `${it.fs}px -apple-system, "Segoe UI", Roboto, Arial, sans-serif`; ctx.textBaseline = 'top';
       it.text.split('\n').forEach((l, i) => ctx.fillText(l, it.x, it.y + i * it.fs * 1.25));
     } else if (it.t === 'mark') { it.rects.forEach(r => ctx.fillRect(r[0], r[1], r[2], r[3])); }
+    else if (it.t === 'link') { ctx.globalAlpha = 0.9; ctx.strokeStyle = '#2f6fde'; ctx.lineWidth = 1.1; ctx.setLineDash([3, 2]); it.rects.forEach(r => { ctx.beginPath(); ctx.moveTo(r[0], r[1] + r[3] + 0.8); ctx.lineTo(r[0] + r[2], r[1] + r[3] + 0.8); ctx.stroke(); }); ctx.setLineDash([]); ctx.globalAlpha = 0.12; ctx.fillStyle = '#2f6fde'; it.rects.forEach(r => ctx.fillRect(r[0], r[1], r[2], r[3])); }
+    else if (it.t === 'sticky' && ctx._exp) {
+      const W = 150, fs = 8.5, lh = fs * 1.3; ctx.font = `${fs}px -apple-system, "Segoe UI", Roboto, Arial, sans-serif`; ctx.textBaseline = 'top';
+      const lines = []; String(it.text || '').split('\n').forEach(par => { let ln = ''; par.split(/\s+/).forEach(w => { const t = ln ? ln + ' ' + w : w; if (ctx.measureText(t).width > W - 12 && ln) { lines.push(ln); ln = w; } else ln = t; }); lines.push(ln); });
+      const H = Math.max(28, 12 + lines.length * lh);
+      ctx.globalAlpha = 1; ctx.fillStyle = it.c || '#fff2a8'; ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 3; ctx.fillRect(it.x, it.y, W, H); ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 0.5; ctx.strokeRect(it.x, it.y, W, H); ctx.fillStyle = '#222'; lines.forEach((l, i) => ctx.fillText(l, it.x + 6, it.y + 6 + i * lh));
+    } else if (it.t === 'sticky' && ctx._thumb) { ctx.globalAlpha = 1; ctx.fillStyle = it.c || '#fff2a8'; ctx.fillRect(it.x, it.y, 18, 18); }
     ctx.restore();
   },
   segDist(px, py, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1]; const l = dx * dx + dy * dy; let t = l ? ((px - a[0]) * dx + (py - a[1]) * dy) / l : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - a[0] - t * dx, py - a[1] - t * dy); },
@@ -3299,11 +3375,12 @@ const INK = {
     if (it.t === 'line' || it.t === 'arrow') return INK.segDist(x, y, p[0], p[1]) < r + it.w / 2;
     if (it.t === 'rect') { const [a, b] = p; const c = [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]]]; for (let i = 0; i < 4; i++) if (INK.segDist(x, y, c[i], c[(i + 1) % 4]) < r + it.w / 2) return true; return false; }
     if (it.t === 'text') { const lines = it.text.split('\n'); const w = Math.max(...lines.map(l => l.length)) * it.fs * 0.55; return x >= it.x - r && x <= it.x + w + r && y >= it.y - r && y <= it.y + lines.length * it.fs * 1.25 + r; }
-    if (it.t === 'mark') return it.rects.some(q => x >= q[0] - r && x <= q[0] + q[2] + r && y >= q[1] - r && y <= q[1] + q[3] + r);
+    if (it.t === 'sticky') return x >= it.x - r && x <= it.x + 22 + r && y >= it.y - r && y <= it.y + 22 + r;
+    if (it.t === 'mark' || it.t === 'link') return it.rects.some(q => x >= q[0] - r && x <= q[0] + q[2] + r && y >= q[1] - r && y <= q[1] + q[3] + r);
     return false;
   }
 };
-const TOOLS = [['select', 'cursor', 'Selecionar texto (V)'], ['hand', 'hand', 'Mão — rolar (Espaço)'], ['pen', 'pen', 'Caneta (P)'], ['hl', 'highlighter', 'Marca-texto (H)'], ['eraser', 'eraser', 'Borracha (E)'], ['text', 'type', 'Texto (T)'], ['line', 'line', 'Linha (L)'], ['arrow', 'arrow', 'Seta (A)'], ['rect', 'square', 'Retângulo (R)']];
+const TOOLS = [['select', 'cursor', 'Selecionar texto (V)'], ['hand', 'hand', 'Mão — rolar (Espaço)'], ['pen', 'pen', 'Caneta (P)'], ['hl', 'highlighter', 'Marca-texto (H)'], ['eraser', 'eraser', 'Borracha (E)'], ['text', 'type', 'Texto (T)'], ['line', 'line', 'Linha (L)'], ['arrow', 'arrow', 'Seta (A)'], ['rect', 'square', 'Retângulo (R)'], ['sticky', 'sticky', 'Post-it (N): toque na página para colar uma nota']];
 const DRAW_TOOLS = new Set(['pen', 'hl', 'eraser', 'text', 'line', 'arrow', 'rect']);
 
 class PdfView {
@@ -3313,13 +3390,39 @@ class PdfView {
     const st = JSON.parse(localStorage.getItem('codex.pdftool') || '{}');
     this.tool = st.tool || 'pen'; this.penColor = st.penColor || Settings.get('penColors')[0]; this.hlColor = st.hlColor || Settings.get('hlColors')[0];
     this.penW = st.penW || 1.6; this.hlW = st.hlW || 12; this.penOnly = Settings.get('penOnly'); this.fs = st.fs || 14;
+    this.penStyle = st.penStyle || 'caneta'; this.hlStraight = st.hlStraight ?? true; this.eraserR = st.eraserR || 7; this.prevTool = st.prevTool || 'pen';
+    this.penRecent = Array.isArray(st.penRecent) && st.penRecent.length ? st.penRecent : Settings.get('penColors').slice(0, 6);
+    this.hlRecent = Array.isArray(st.hlRecent) && st.hlRecent.length ? st.hlRecent : Settings.get('hlColors').slice(0, 6);
     this.ann = { version: 1, pages: {} }; this.undo = []; this.redo = []; this.pages = []; this.scale = 1;
   }
-  saveToolState() { localStorage.setItem('codex.pdftool', JSON.stringify({ tool: this.tool, penColor: this.penColor, hlColor: this.hlColor, penW: this.penW, hlW: this.hlW, fs: this.fs })); }
+  saveToolState() { localStorage.setItem('codex.pdftool', JSON.stringify({ tool: this.tool, penColor: this.penColor, hlColor: this.hlColor, penW: this.penW, hlW: this.hlW, fs: this.fs, penStyle: this.penStyle, hlStraight: this.hlStraight, eraserR: this.eraserR, prevTool: this.prevTool, penRecent: this.penRecent, hlRecent: this.hlRecent })); }
+  /* pequeno painel flutuante preso a um botão */
+  pop(anchor, content) {
+    this.closePop();
+    const el = h('div', { class: 'pdf-pop' }, content); document.body.append(el);
+    const r = anchor.getBoundingClientRect(); const w = el.offsetWidth, hh = el.offsetHeight;
+    el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
+    el.style.top = (r.bottom + 6 + hh > innerHeight ? Math.max(8, r.top - hh - 6) : r.bottom + 6) + 'px';
+    const off = e => { if (!el.contains(e.target) && !anchor.contains(e.target)) this.closePop(); };
+    setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+    this._pop = { el, off }; return el;
+  }
+  closePop() { if (this._pop) { this._pop.el.remove(); document.removeEventListener('pointerdown', this._pop.off, true); this._pop = null; } }
+  previewPen(cv, ps) {
+    const c = cv.getContext('2d'); const it = { t: 'pen', ps, pr: 1, c: this.penColor, w: Math.max(1.4, Math.min(3, this.penW)), p: Array.from({ length: 36 }, (_, i) => [6 + i * 3.1, 14 + Math.sin(i / 3.2) * 8, 0.2 + 0.75 * Math.abs(Math.sin(i / 11))]) };
+    INK.draw(c, it);
+  }
+  pickColor(c) {
+    const isHl = this.tool === 'hl'; const key = isHl ? 'hlRecent' : 'penRecent';
+    if (isHl) this.hlColor = c; else this.penColor = c;
+    if (!this[key].includes(c)) this[key] = [c, ...this[key]].slice(0, 6);
+    this.saveToolState(); this.buildToolbar();
+  }
   async mount() {
     this.root = h('div', { class: 'pdfv', 'data-tool': this.tool });
     this.head = viewHead(this.tab, this.path, [
       h('button', { class: 'btn sm', html: icon('sparkles') + 'Gemini', title: 'Perguntar ao Gemini sobre este PDF', onclick: () => AI.focus('pdf') }),
+      h('button', { class: 'btn sm', html: icon('review') + 'Revisão', title: 'Gerar ou atualizar o arquivo de revisão com os textos destacados e os post-its, na ordem em que foram feitos', onclick: () => this.buildReview() }),
       h('button', { class: 'ib', title: 'Exportar PDF com as anotações', html: icon('download'), onclick: () => this.exportDialog() }),
       h('button', { class: 'ib', title: 'Mais', html: icon('more'), onclick: e => this.menu(e) })]);
     this.tb = h('div', { class: 'pdf-tb' }); this.findBar = h('div', { class: 'pdf-find hidden' });
@@ -3363,7 +3466,8 @@ class PdfView {
       pg.el = h('div', { class: 'pg', 'data-i': pg.i });
       pg.pdfc = h('canvas', { class: 'pdfc' }); pg.tl = h('div', { class: 'textLayer' });
       pg.ink = h('canvas', { class: 'ink', style: { mixBlendMode: 'multiply' } }); pg.live = h('canvas', { class: 'live', width: 1, height: 1 });
-      pg.el.append(pg.pdfc, pg.tl, pg.ink, pg.live, h('span', { class: 'pgnum', text: (pg.i + 1) + ' / ' + this.pages.length }));
+      pg.sl = h('div', { class: 'stickies' });
+      pg.el.append(pg.pdfc, pg.tl, pg.ink, pg.live, pg.sl, h('span', { class: 'pgnum', text: (pg.i + 1) + ' / ' + this.pages.length }));
       this.pagesEl.append(pg.el); this.io.observe(pg.el); this.applyTouchAction(pg);
     }
   }
@@ -3398,6 +3502,7 @@ class PdfView {
     if (rendered.length > 6) rendered.slice(0, rendered.length - 6).forEach(p => { p.done = 0; p.pdfc.width = p.pdfc.height = 0; p.ink.width = p.ink.height = 0; p.tl.innerHTML = ''; });
   }
   drawInk(pg) {
+    this.renderStickies(pg);
     if (!pg.ink.width) return; const c = pg.ink.getContext('2d'); const k = this.scale * pg.d;
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.ink.width, pg.ink.height); c.setTransform(k, 0, 0, k, 0, 0);
     (this.ann.pages[pg.i] || []).forEach(it => INK.draw(c, it));
@@ -3405,14 +3510,45 @@ class PdfView {
   buildToolbar() {
     const tb = this.tb; tb.innerHTML = '';
     const g1 = h('div', { class: 'grp' }); TOOLS.forEach(([t, ic, tt]) => g1.append(h('button', { class: 'ib' + (this.tool === t ? ' on' : ''), title: tt, html: icon(ic), onclick: () => this.setTool(t) })));
-    const g2 = h('div', { class: 'grp' });
-    const isHl = this.tool === 'hl'; const cols = isHl ? Settings.get('hlColors') : Settings.get('penColors'); const curC = isHl ? this.hlColor : this.penColor;
-    cols.forEach(c => g2.append(h('div', { class: 'swatch' + (c === curC ? ' on' : ''), style: { background: c }, title: c, onclick: () => { isHl ? this.hlColor = c : this.penColor = c; this.saveToolState(); this.buildToolbar(); } })));
-    const custom = h('input', { type: 'color', value: curC, title: 'Outra cor', style: { width: '28px', height: '28px', border: '0', background: 'none', padding: '0', cursor: 'pointer' } });
-    custom.onchange = () => { isHl ? this.hlColor = custom.value : this.penColor = custom.value; this.saveToolState(); this.buildToolbar(); }; g2.append(custom);
-    const g3 = h('div', { class: 'grp' });
+    const g2 = h('div', { class: 'grp' }); const g3 = h('div', { class: 'grp' });
+    const isHl = this.tool === 'hl'; const isPenLike = ['pen', 'line', 'arrow', 'rect', 'text'].includes(this.tool);
+    if (isHl || isPenLike) {
+      const cols = isHl ? this.hlRecent : this.penRecent; const curC = isHl ? this.hlColor : this.penColor;
+      cols.forEach(c => g2.append(h('div', { class: 'swatch' + (c === curC ? ' on' : ''), style: { background: c }, title: c, onclick: () => this.pickColor(c) })));
+      if (!cols.includes(curC)) g2.prepend(h('div', { class: 'swatch on', style: { background: curC }, title: curC }));
+      const more = h('button', { class: 'swatch more', title: 'Mais cores', onclick: () => {
+        const pal = isHl ? HL_PALETTE : PEN_PALETTE;
+        const custom = h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(curC) ? curC : '#000000', onchange: e => { this.pickColor(e.target.value); this.closePop(); } });
+        this.pop(more, [h('div', { class: 'pal-grid' }, ...pal.map(c => h('button', { class: 'pal-c' + (c === curC ? ' on' : ''), style: { background: c }, title: c, onclick: () => { this.pickColor(c); this.closePop(); } }))),
+          h('label', { class: 'pal-custom' }, custom, h('span', { text: 'Outra cor…' }))]);
+      } }); g2.append(more);
+    }
+    if (this.tool === 'pen') {
+      const cur = PEN_STYLES.find(x => x[0] === this.penStyle) || PEN_STYLES[0];
+      const sb = h('button', { class: 'btn sm pen-style', title: 'Tipo de caneta', html: icon('pen') + esc(cur[1]) + ' ▾', onclick: () => this.pop(sb, h('div', { class: 'pop-list' }, ...PEN_STYLES.map(([k, n, d]) => h('button', { class: 'pop-item' + (k === this.penStyle ? ' on' : ''), onclick: () => { this.penStyle = k; this.saveToolState(); this.closePop(); this.buildToolbar(); } }, h('canvas', { class: 'pen-prev', width: 120, height: 28, 'data-ps': k }), h('span', {}, h('b', { text: n }), h('small', { text: d }))))))
+        .querySelectorAll('canvas.pen-prev').forEach(cv => this.previewPen(cv, cv.dataset.ps)) });
+      g3.append(sb);
+    }
+    if (this.tool === 'hl') {
+      g3.append(h('button', { class: 'btn sm' + (this.hlStraight ? ' on-tog' : ''), title: this.hlStraight ? 'Destaque reto: LIGADO — o destaque segue a linha do texto, na altura das letras' : 'Destaque reto: DESLIGADO — traço livre', html: (this.hlStraight ? '━ Reto' : '〰 Livre'), onclick: () => { this.hlStraight = !this.hlStraight; this.saveToolState(); this.buildToolbar(); UI.toast(this.hlStraight ? 'Destaque reto: acompanha a linha do texto.' : 'Destaque livre.'); } }));
+    }
     if (this.tool === 'text') { [11, 14, 18, 24].forEach(s => g3.append(h('button', { class: 'wbtn' + (this.fs === s ? ' on' : ''), title: s + ' pt', html: `<span style="font-size:${8 + s / 3}px;font-weight:700">A</span>`, onclick: () => { this.fs = s; this.saveToolState(); this.buildToolbar(); } }))); }
-    else { const ws = isHl ? [8, 12, 18] : [0.8, 1.6, 3, 5]; const cw = isHl ? this.hlW : this.penW; ws.forEach(w => g3.append(h('button', { class: 'wbtn' + (w === cw ? ' on' : ''), title: 'Espessura ' + w, html: `<i style="height:${Math.max(2, Math.min(12, w * (isHl ? .5 : 1.5)))}px"></i>`, onclick: () => { isHl ? this.hlW = w : this.penW = w; this.saveToolState(); this.buildToolbar(); } }))); }
+    else if (this.tool === 'eraser') {
+      [[4, 'Pequena'], [7, 'Média'], [14, 'Grande'], [26, 'Muito grande']].forEach(([r, n]) => g3.append(h('button', { class: 'wbtn' + (this.eraserR === r ? ' on' : ''), title: 'Borracha ' + n, html: `<i style="width:${Math.max(6, r)}px;height:${Math.max(6, r)}px;border-radius:50%;background:none;border:2px solid var(--text)"></i>`, onclick: () => { this.eraserR = r; this.saveToolState(); this.buildToolbar(); } })));
+    }
+    else if (isHl || isPenLike) {
+      const ws = isHl ? [6, 10, 14, 20] : [0.6, 1.2, 2, 3.5]; const cw = isHl ? this.hlW : this.penW;
+      const dot = w => `<i style="width:${Math.max(3, Math.min(18, w * (isHl ? .8 : 2.2)))}px;height:${Math.max(3, Math.min(18, w * (isHl ? .8 : 2.2)))}px;border-radius:50%"></i>`;
+      ws.forEach(w => g3.append(h('button', { class: 'wbtn' + (w === cw ? ' on' : ''), title: 'Espessura ' + w, html: dot(w), onclick: () => { isHl ? this.hlW = w : this.penW = w; this.saveToolState(); this.buildToolbar(); } })));
+      const szb = h('button', { class: 'btn sm' + (ws.includes(cw) ? '' : ' on-tog'), title: 'Outros tamanhos de ponto', text: (Math.round(cw * 10) / 10) + ' pt ▾', onclick: () => {
+        const min = isHl ? 3 : 0.3, max = isHl ? 40 : 16, step = isHl ? 1 : 0.1;
+        const val = h('span', { class: 'sz-val', text: cw + ' pt' }); const cv = h('canvas', { class: 'sz-prev', width: 220, height: 48 });
+        const draw = w => { const c = cv.getContext('2d'); c.clearRect(0, 0, 220, 48); const it = isHl ? { t: 'hl', c: this.hlColor, w, p: [[16, 24], [204, 24]] } : { t: 'pen', ps: this.penStyle, pr: 1, c: this.penColor, w, p: Array.from({ length: 40 }, (_, i) => [14 + i * 4.8, 24 + Math.sin(i / 4) * 10, 0.25 + 0.6 * Math.sin(i / 13)]) }; INK.draw(c, it); };
+        const rng = h('input', { type: 'range', min, max, step, value: cw, oninput: e => { const w = +e.target.value; val.textContent = w + ' pt'; draw(w); }, onchange: e => { const w = +e.target.value; isHl ? this.hlW = w : this.penW = w; this.saveToolState(); this.buildToolbar(); } });
+        const presets = (isHl ? [4, 6, 8, 10, 12, 14, 16, 20, 24, 30, 36] : [0.3, 0.5, 0.8, 1, 1.2, 1.6, 2, 2.5, 3, 4, 5, 6, 8, 10, 13, 16]).map(w => h('button', { class: 'pal-sz' + (w === cw ? ' on' : ''), text: w, onclick: () => { isHl ? this.hlW = w : this.penW = w; this.saveToolState(); this.closePop(); this.buildToolbar(); } }));
+        this.pop(szb, [cv, h('div', { class: 'sz-row' }, rng, val), h('div', { class: 'sz-presets' }, ...presets)]); draw(cw);
+      } }); g3.append(szb);
+    }
     const g4 = h('div', { class: 'grp' },
       h('button', { class: 'ib' + (this.penOnly ? ' on' : ''), title: this.penOnly ? 'Só caneta: LIGADO (o dedo rola a página; ideal para Apple Pencil)' : 'Só caneta: DESLIGADO (o dedo também desenha)', html: icon('pentool'), onclick: () => { this.penOnly = !this.penOnly; Settings.set('penOnly', this.penOnly); this.pages.forEach(p => this.applyTouchAction(p)); this.buildToolbar(); UI.toast(this.penOnly ? 'Só caneta ligado: o dedo rola, a caneta escreve.' : 'Só caneta desligado: o dedo também escreve.'); } }),
       h('button', { class: 'ib', title: 'Desfazer (' + MOD + '+Z)', html: icon('undo'), onclick: () => this.doUndo() }),
@@ -3430,7 +3566,7 @@ class PdfView {
       h('button', { class: 'ib', title: 'Buscar no PDF (' + MOD + '+F)', html: icon('search'), onclick: () => this.toggleFind() }));
     tb.append(g1, g2, g3, g4, g5, g6);
   }
-  setTool(t) { if (this.textEd) this.commitText(); this.tool = t; this.root.dataset.tool = t; this.saveToolState(); this.buildToolbar(); this.pages.forEach(p => this.applyTouchAction(p)); this.hideSelPop(); }
+  setTool(t) { if (this.textEd) this.commitText(); this.closePop(); if (t !== 'eraser' && DRAW_TOOLS.has(t)) this.prevTool = t; this.tool = t; this.root.dataset.tool = t; this.saveToolState(); this.buildToolbar(); this.pages.forEach(p => this.applyTouchAction(p)); this.hideSelPop(); }
   currentPage() { if (!this.pages.length) return null; const st = this.scroller.scrollTop + this.scroller.clientHeight * 0.3; let cur = 0; for (const p of this.pages) { if (p.el.offsetTop <= st) cur = p.i; else break; } return cur; }
   gotoPage(n) { const p = this.pages[Math.max(1, Math.min(n, this.pages.length)) - 1]; if (p) this.scroller.scrollTop = p.el.offsetTop - 8; }
   goto(o) { if (o.page) this.gotoPage(o.page); }
@@ -3450,27 +3586,30 @@ class PdfView {
     };
     this.pagesEl.addEventListener('pointerdown', e => {
       /* seleção de texto com a caneta (para destacar trechos com as cores) */
-      if (this.tool === 'select' && e.pointerType === 'pen' && e.target.closest?.('.textLayer')) {
+      if (this.tool === 'select' && e.pointerType === 'pen' && !(e.button === 2 || e.button === 5 || (e.buttons & 34)) && e.target.closest?.('.textLayer')) {
         const a = caretAt(e.clientX, e.clientY); e.preventDefault(); this.hideSelPop();
         const sel = getSelection(); if (a) sel.setBaseAndExtent(a.node, a.off, a.node, a.off); else sel.removeAllRanges();
         this.penSel = { pid: e.pointerId, a }; return;
       }
-      const pgEl = e.target.closest('.pg'); if (!pgEl || e.target !== pgEl.querySelector('.live')) return;
+      const pgEl = e.target.closest('.pg'); if (!pgEl) return;
+      // ponta-borracha (Surface e similares) ou botão lateral da caneta (S Pen): apaga com qualquer ferramenta
+      const eraserBtn = e.button === 5 || (e.buttons & 32) || (e.pointerType === 'pen' && (e.button === 2 || (e.buttons & 2)));
+      if (!eraserBtn && e.target !== pgEl.querySelector('.live')) return;
       const pg = this.pages[+pgEl.dataset.i];
-      let tool = this.tool; if (e.button === 5 || (e.buttons & 32)) tool = 'eraser';
-      else if (e.pointerType === 'pen' && (e.button === 2 || (e.buttons & 2)) && DRAW_TOOLS.has(tool)) tool = 'eraser'; // botão lateral da S Pen
+      let tool = this.tool; if (eraserBtn) tool = 'eraser';
       if (!DRAW_TOOLS.has(tool)) return;
       if (e.pointerType === 'touch' && (this.penOnly || this.penDown)) return; // rejeição de palma / dedo rola
       if (e.button > 0 && e.button !== 5 && !(e.pointerType === 'pen' && e.button === 2)) return;
       e.preventDefault(); this.hideSelPop();
       const pt = toU(e, pg);
       if (tool === 'text') { this.startText(pg, pt); return; }
-      try { pg.live.setPointerCapture(e.pointerId); } catch (er) { } this.penDown = e.pointerType === 'pen';
+      try { (eraserBtn ? pgEl : pg.live).setPointerCapture(e.pointerId); } catch (er) { } this.penDown = e.pointerType === 'pen';
       if (tool === 'eraser') { this.cur = { pg, tool, erased: [], pid: e.pointerId }; this.eraseAt(pg, pt); return; }
       const it = { t: tool, c: tool === 'hl' ? this.hlColor : this.penColor, w: tool === 'hl' ? this.hlW : this.penW, p: [pt] };
-      if (tool === 'pen' && e.pointerType === 'pen') it.pr = 1;
+      if (tool === 'pen') { it.ps = this.penStyle; if (e.pointerType === 'pen') it.pr = 1; }
       if (['line', 'arrow', 'rect'].includes(tool)) it.p = [pt, pt.slice()];
       this.cur = { pg, tool, it, pid: e.pointerId };
+      if (tool === 'hl' && this.hlStraight) { it.p = [pt, pt.slice()]; this.cur.straight = true; this.cur.band = this.lineBand(pg, pt); }
       if (tool !== 'pen') { const d = pg.d || 1; pg.live.width = pg.w * this.scale * d; pg.live.height = pg.h * this.scale * d; }
       else { const c = pg.ink.getContext('2d'); INK.style(c, it); }
     });
@@ -3489,6 +3628,7 @@ class PdfView {
         for (const ev of evs.length ? evs : [e]) { const pt = toU(ev, pg); const last = it.p[it.p.length - 1]; if (Math.hypot(pt[0] - last[0], pt[1] - last[1]) < 0.35) continue; it.p.push(pt); if (it.p.length >= 3) INK.penSeg(c, it, it.p.length - 1); }
         return;
       }
+      if (cur.straight) { const pt = toU(e, pg); it.p[1] = [pt[0], it.p[0][1], pt[2]]; const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); INK.draw(c, this.straightItem(cur)); return; }
       if (cur.tool === 'hl') { for (const ev of evs.length ? evs : [e]) it.p.push(toU(ev, pg)); }
       else { let pt = toU(e, pg); if (e.shiftKey && cur.tool !== 'rect') { const a = it.p[0]; const ang = Math.round(Math.atan2(pt[1] - a[1], pt[0] - a[0]) / (Math.PI / 4)) * Math.PI / 4; const L = Math.hypot(pt[0] - a[0], pt[1] - a[1]); pt = [a[0] + L * Math.cos(ang), a[1] + L * Math.sin(ang)]; } it.p[1] = pt; }
       const c = pg.live.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pg.live.width, pg.live.height); c.setTransform(k, 0, 0, k, 0, 0); INK.draw(c, it);
@@ -3497,15 +3637,29 @@ class PdfView {
       if (this.penSel && e.pointerId === this.penSel.pid) { this.penSel = null; return; }
       const cur = this.cur; if (!cur || e.pointerId !== cur.pid) return; this.cur = null; this.penDown = false; const pg = cur.pg;
       if (cur.tool === 'eraser') { if (cur.erased.length) { this.pushUndo({ t: 'del', page: pg.i, items: cur.erased }); this.saveSoon(); } return; }
-      const it = cur.it;
-      if (cur.tool === 'pen') { const c = pg.ink.getContext('2d'); const k = this.scale * (pg.d || 1); c.setTransform(k, 0, 0, k, 0, 0); INK.style(c, it); if (it.p.length === 1) INK.draw(c, it); else INK.penEnd(c, it); }
+      let it = cur.it;
+      if (cur.straight) { pg.live.width = pg.live.height = 1; if (Math.abs(it.p[1][0] - it.p[0][0]) < 1.5) return; it = this.straightItem(cur); }
+      else if (cur.tool === 'pen') { const c = pg.ink.getContext('2d'); const k = this.scale * (pg.d || 1); c.setTransform(k, 0, 0, k, 0, 0); INK.style(c, it); if (it.p.length === 1) INK.draw(c, it); else INK.penEnd(c, it); }
       else { pg.live.width = pg.live.height = 1; if (['line', 'arrow', 'rect'].includes(cur.tool) && Math.hypot(it.p[1][0] - it.p[0][0], it.p[1][1] - it.p[0][1]) < 2) return; }
-      it.p = it.p.map(q => q.map(v => Math.round(v * 100) / 100));
+      if (it.p) it.p = it.p.map(q => q.map(v => Math.round(v * 100) / 100));
+      if (it.t === 'mark' || it.t === 'hl') it.ts = Date.now();
       (this.ann.pages[pg.i] ||= []).push(it); this.pushUndo({ t: 'add', page: pg.i, item: it });
-      if (cur.tool !== 'pen') this.drawInk(pg);
+      if (cur.tool !== 'pen' || cur.straight) this.drawInk(pg);
       this.saveSoon();
     };
     this.pagesEl.addEventListener('pointerup', end); this.pagesEl.addEventListener('pointercancel', end);
+    this.scroller.addEventListener('click', e => {
+      if (e.target.closest('.sticky')) return;
+      if (this.tool !== 'sticky') {
+        if (DRAW_TOOLS.has(this.tool) && this.tool !== 'text') return; const s = getSelection(); if (s && !s.isCollapsed) return;
+        const pg = this.pages.find(p => { const b = p.el.getBoundingClientRect(); return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom; }); if (!pg) return; const r = pg.el.getBoundingClientRect();
+        const x = (e.clientX - r.left) / this.scale, y = (e.clientY - r.top) / this.scale;
+        const it = (this.ann.pages[pg.i] || []).slice().reverse().find(q => q.t === 'link' && INK.hit(q, x, y, 1));
+        if (it) this.linkMenu(e, pg, it);
+        return;
+      } const pgEl = e.target.closest('.pg'); if (!pgEl) return;
+      const pg = this.pages[+pgEl.dataset.i]; const r = pgEl.getBoundingClientRect(); this.addSticky(pg, (e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale);
+    });
     /* Apple Pencil não deve rolar a página; dedo rola quando “só caneta” está ligado */
     const blockScroll = e => {
       if (this.tool === 'hand') return false;
@@ -3516,6 +3670,23 @@ class PdfView {
     this.pagesEl.addEventListener('touchstart', e => { if (blockScroll(e) && e.cancelable) e.preventDefault(); }, { passive: false });
     this.pagesEl.addEventListener('touchmove', e => { if (blockScroll(e) && e.cancelable) e.preventDefault(); }, { passive: false });
     this.pagesEl.addEventListener('contextmenu', e => { if (this.cur || this.penSel || performance.now() - (this.stylusAt || 0) < 1500) e.preventDefault(); });
+    /* toque duplo com o dedo: alterna entre a ferramenta de desenho e a borracha (alternativa ao duplo toque da Apple Pencil, que o Safari não repassa a sites) */
+    let tap = null, lastTap = null;
+    this.pagesEl.addEventListener('touchstart', e => { if (e.touches.length !== 1 || [...e.touches].some(t => t.touchType === 'stylus') || performance.now() - (this.stylusAt || 0) < 400) { tap = null; return; } const t = e.touches[0]; tap = { x: t.clientX, y: t.clientY, t: performance.now() }; }, { passive: true });
+    this.pagesEl.addEventListener('touchmove', e => { if (tap && e.touches[0] && Math.hypot(e.touches[0].clientX - tap.x, e.touches[0].clientY - tap.y) > 12) tap = null; }, { passive: true });
+    this.pagesEl.addEventListener('touchend', e => {
+      if (!tap || e.touches.length || performance.now() - tap.t > 280) { tap = null; return; }
+      const now = performance.now();
+      if (lastTap && now - lastTap.t < 380 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 50) {
+        lastTap = null; tap = null;
+        if (!(this.penOnly || !DRAW_TOOLS.has(this.tool)) || this.tool === 'text') return;
+        if (e.cancelable) e.preventDefault();
+        if (this.tool === 'eraser') { this.setTool(this.prevTool && this.prevTool !== 'eraser' ? this.prevTool : 'pen'); UI.toast('Caneta de volta.'); }
+        else if (DRAW_TOOLS.has(this.tool)) { this.prevTool = this.tool; this.setTool('eraser'); UI.toast('Borracha (toque duas vezes com o dedo para voltar).'); }
+        return;
+      }
+      lastTap = { x: tap.x, y: tap.y, t: now }; tap = null;
+    });
     /* pinça para zoom (dois dedos) */
     let pinch = null;
     this.scroller.addEventListener('touchstart', e => { const t = [...e.touches].filter(x => x.touchType !== 'stylus'); if (t.length === 2) { const r = this.scroller.getBoundingClientRect(); const mx = (t[0].clientX + t[1].clientX) / 2 - r.left, my = (t[0].clientY + t[1].clientY) / 2 - r.top; pinch = { d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY), mx, my, cx: this.scroller.scrollLeft + mx, cy: this.scroller.scrollTop + my, ratio: 1 }; this.pagesEl.style.transformOrigin = `${pinch.cx}px ${pinch.cy}px`; } }, { passive: true });
@@ -3541,14 +3712,147 @@ class PdfView {
     if (mod && k === 'y') { e.preventDefault(); this.doRedo(); return true; }
     if (mod && k === 'f') { e.preventDefault(); this.toggleFind(true); return true; }
     if (mod || e.altKey) return false;
-    const map = { v: 'select', p: 'pen', h: 'hl', e: 'eraser', t: 'text', l: 'line', a: 'arrow', r: 'rect', ' ': 'hand' };
+    const map = { v: 'select', p: 'pen', h: 'hl', e: 'eraser', t: 'text', l: 'line', a: 'arrow', r: 'rect', n: 'sticky', ' ': 'hand' };
     if (map[k]) { e.preventDefault(); this.setTool(map[k]); return true; }
     if (k === '+' || k === '=') { this.setScale(this.scale * 1.2); return true; }
     if (k === '-') { this.setScale(this.scale / 1.2); return true; }
     return false;
   }
+  /* ---------- post-its ---------- */
+  renderStickies(pg) {
+    if (!pg.sl) return; const items = (this.ann.pages[pg.i] || []).filter(it => it.t === 'sticky');
+    pg._stk ||= new Map();
+    for (const [it, el] of pg._stk) if (!items.includes(it)) { el.remove(); pg._stk.delete(it); }
+    for (const it of items) {
+      let el = pg._stk.get(it);
+      if (!el) { el = this.stickyEl(pg, it); pg._stk.set(it, el); pg.sl.append(el); }
+      el.style.left = (it.x / pg.w * 100) + '%'; el.style.top = (it.y / pg.h * 100) + '%';
+      el.classList.toggle('open', !!it.open); el.style.setProperty('--stk', it.c || '#fff2a8');
+      el.classList.toggle('flip', it.x * this.scale + 236 > pg.w * this.scale); el.classList.toggle('up', it.y * this.scale + 190 > pg.h * this.scale);
+    }
+  }
+  stickyEl(pg, it) {
+    const COLORS = ['#fff2a8', '#ffd6a5', '#ffc6d9', '#d0f4de', '#cde7ff', '#e4d4ff'];
+    const ta = h('textarea', { class: 'stk-ta', placeholder: 'Escreva sua anotação…', value: it.text || '' });
+    ta.value = it.text || '';
+    const save = debounce(() => this.saveSoon(), 500);
+    ta.addEventListener('input', () => { it.text = ta.value; it.mt = Date.now(); save(); });
+    ta.addEventListener('pointerdown', e => e.stopPropagation());
+    const toggle = () => { it.open = !it.open; this.renderStickies(pg); this.saveSoon(); if (it.open) setTimeout(() => ta.focus(), 30); };
+    const del = async () => {
+      if ((it.text || '').trim() && !(await UI.confirm('Excluir post-it', 'Excluir este post-it e o texto dele?', 'Excluir', true))) return;
+      const arr = this.ann.pages[pg.i] || []; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1);
+      this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.renderStickies(pg); this.saveSoon();
+    };
+    const head = h('div', { class: 'stk-head', title: 'Arraste para mover' },
+      h('span', { class: 'stk-colors' }, ...COLORS.map(c => h('button', { class: 'stk-c', style: { background: c }, title: 'Cor do post-it', onclick: e => { e.stopPropagation(); it.c = c; this.renderStickies(pg); this.saveSoon(); } }))),
+      h('button', { class: 'stk-b', title: 'Recolher', html: '–', onclick: e => { e.stopPropagation(); toggle(); } }),
+      h('button', { class: 'stk-b', title: 'Excluir post-it', html: icon('trash'), onclick: e => { e.stopPropagation(); del(); } }));
+    const pin = h('button', { class: 'stk-pin', title: 'Abrir post-it', html: icon('sticky'), onclick: e => { e.stopPropagation(); if (!moved) toggle(); } });
+    const el = h('div', { class: 'sticky' }, pin, h('div', { class: 'stk-card' }, head, ta));
+    // arrastar (mouse, dedo ou caneta) pelo cabeçalho ou pelo ícone
+    let drag = null, moved = false;
+    const down = e => { if (e.target.closest('.stk-c,.stk-b')) return; e.preventDefault(); e.stopPropagation(); moved = false; const r = pg.el.getBoundingClientRect(); drag = { id: e.pointerId, dx: e.clientX - (r.left + it.x * this.scale), dy: e.clientY - (r.top + it.y * this.scale), x0: e.clientX, y0: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (er) { } };
+    const move = e => { if (!drag || e.pointerId !== drag.id) return; if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 4) moved = true; if (!moved) return; const r = pg.el.getBoundingClientRect(); it.x = Math.max(0, Math.min(pg.w - 20, (e.clientX - drag.dx - r.left) / this.scale)); it.y = Math.max(0, Math.min(pg.h - 20, (e.clientY - drag.dy - r.top) / this.scale)); el.style.left = (it.x / pg.w * 100) + '%'; el.style.top = (it.y / pg.h * 100) + '%'; };
+    const up = e => { if (!drag || e.pointerId !== drag.id) return; drag = null; if (moved) { it.x = Math.round(it.x * 100) / 100; it.y = Math.round(it.y * 100) / 100; this.saveSoon(); setTimeout(() => moved = false, 50); } };
+    for (const t of [head, pin]) { t.addEventListener('pointerdown', down); t.addEventListener('pointermove', move); t.addEventListener('pointerup', up); t.addEventListener('pointercancel', up); }
+    el.addEventListener('pointerdown', e => e.stopPropagation());
+    return el;
+  }
+  addSticky(pg, x, y) {
+    const it = { t: 'sticky', x: Math.round(Math.min(x, pg.w - 160) * 100) / 100, y: Math.round(Math.min(y, pg.h - 40) * 100) / 100, c: '#fff2a8', text: '', open: true, ts: Date.now() };
+    (this.ann.pages[pg.i] ||= []).push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); this.renderStickies(pg); this.saveSoon();
+    setTimeout(() => pg._stk?.get(it)?.querySelector('textarea')?.focus(), 40);
+  }
+  /* ---------- arquivo de revisão ---------- */
+  reviewPath() { return joinP(dirOf(this.path), 'Revisão — ' + stemOf(this.path) + '.md'); }
+  async pageText(pg) {
+    if (pg._tc) return pg._tc;
+    const tc = await pg.page.getTextContent(); const vp = pg.page.getViewport({ scale: 1 }); const out = [];
+    for (const item of tc.items) {
+      if (!item.str || !item.str.trim()) { if (item.str === ' ' && out.length) out[out.length - 1].sp = true; continue; }
+      const [a, b, c, d, e, f] = item.transform; const fh = Math.hypot(c, d) || Math.hypot(a, b) || 10;
+      const [x0, yb] = vp.convertToViewportPoint(e, f); const [x1, yt] = vp.convertToViewportPoint(e + (item.width || 0), f + fh);
+      out.push({ s: item.str, x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(yb, yt), y1: Math.max(yb, yt), eol: item.hasEOL });
+    }
+    return (pg._tc = out);
+  }
+  textUnder(tc, it) {
+    const parts = [];
+    const slice = (t, xa, xb) => {
+      const w = t.x1 - t.x0 || 1, n = t.s.length; let i0 = Math.max(0, Math.floor((xa - t.x0) / w * n + 0.35)), i1 = Math.min(n, Math.ceil((xb - t.x0) / w * n - 0.35));
+      if (i1 <= i0) return '';
+      const W = /[\p{L}\p{N}º°ª§\-.,]/u; // completa a palavra cortada no começo e no fim
+      while (i0 > 0 && W.test(t.s[i0 - 1]) && W.test(t.s[i0])) i0--;
+      while (i1 < n && W.test(t.s[i1]) && W.test(t.s[i1 - 1])) i1++;
+      return t.s.slice(i0, i1).replace(/^[\s,.;]+|[\s,;]+$/g, '');
+    };
+    if (it.t === 'mark') {
+      for (const t of tc) { const hh = t.y1 - t.y0; for (const r of it.rects) { const ov = Math.min(t.y1, r[1] + r[3]) - Math.max(t.y0, r[1]); if (ov < hh * 0.45) continue; if (t.x1 < r[0] || t.x0 > r[0] + r[2]) continue; const s = slice(t, r[0], r[0] + r[2]); if (s) parts.push({ t, s }); } }
+    } else if (it.t === 'hl') {
+      const half = (it.w || 10) / 2;
+      for (const t of tc) { const pts = it.p.filter(q => q[1] + half * 0.6 >= t.y0 && q[1] - half * 0.6 <= t.y1 && q[0] >= t.x0 - 2 && q[0] <= t.x1 + 2); if (!pts.length) continue; const xs = pts.map(q => q[0]); const s = slice(t, Math.min(...xs) - half * 0.3, Math.max(...xs) + half * 0.3); if (s) parts.push({ t, s }); }
+    }
+    let txt = ''; let prev = null;
+    for (const p of parts) { if (prev) { const sameLine = Math.abs(p.t.y0 - prev.t.y0) < (prev.t.y1 - prev.t.y0) * 0.5; if (prev.t === p.t) { } else if (!sameLine && /-$/.test(txt) && !/\s-$/.test(txt)) txt = txt.slice(0, -1); else txt += (sameLine && !prev.t.sp && p.t.x0 - prev.t.x1 < 1.5 ? '' : ' '); } txt += p.s; prev = p; }
+    return txt.replace(/\s+/g, ' ').trim();
+  }
+  async buildReview(opt = {}) {
+    if (!opt.silent) await this.flush?.();
+    const entries = [];
+    for (const pg of this.pages) {
+      const items = this.ann.pages[pg.i] || [];
+      for (let k = 0; k < items.length; k++) { const it = items[k]; if (it.t === 'mark' || it.t === 'hl' || it.t === 'sticky' || (it.t === 'link' && ((it.tags || []).length || (it.notes || []).length))) entries.push({ it, pg, k }); }
+    }
+    if (!entries.length) { if (!opt.silent) UI.toast('Ainda não há destaques nem post-its neste PDF.'); return; }
+    entries.sort((a, b) => (a.it.ts || 0) - (b.it.ts || 0) || a.pg.i - b.pg.i || a.k - b.k);
+    if (!opt.silent) Loading.show('Gerando a revisão…');
+    try {
+      const link = App.linkText(this.path); const lines = []; let n = 0;
+      for (const { it, pg } of entries) {
+        const pn = pg.i + 1, pl = `[[${link}#page=${pn}|p. ${pn}]]`;
+        if (it.t === 'sticky') { const body = (it.text || '').trim(); if (!body) continue; lines.push(`> [!note] Post-it — ${pl}`, ...body.split('\n').map(l => '> ' + l), ''); continue; }
+        if (it.t === 'link') { const tg = (it.tags || []).map(t => '#' + t).join(' '); const nt = (it.notes || []).filter(p => App.fileMap.has(p)).map(p => `[[${App.linkText(p)}]]`).join(', '); lines.push(`- 🔗 “${(it.txt || '').replace(/\s+/g, ' ')}” — ${pl}${tg ? ' — ' + tg : ''}${nt ? ' — vinculado a ' + nt : ''}`, ''); continue; }
+        const txt = this.textUnder(await this.pageText(pg), it);
+        n++; const col = /^#[0-9a-f]{6}$/i.test(it.c) ? it.c + '80' : it.c;
+        lines.push(`${n}. <mark style="background:${col}">${esc(txt || '(destaque sem texto reconhecível, por exemplo sobre imagem ou PDF escaneado)')}</mark> — ${pl}`, '');
+      }
+      const now = new Date(); const dt = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const B = '%% revisão automática: início. O que estiver entre esta marca e a de fim é refeito ao clicar em Revisão; escreva suas observações fora delas. %%', E = '%% revisão automática: fim %%';
+      const block = [B, `*Atualizado em ${dt} — ${n} destaque(s)*`, '', ...lines, E].join('\n');
+      const p = this.reviewPath(); const exists = App.fileMap.has(p) || await App.vault.exists(p).catch(() => false);
+      if (exists) {
+        await App.editNote(p, old => { const a = old.indexOf('%% revisão automática: início'), b = old.indexOf(E); return a >= 0 && b > a ? old.slice(0, a) + block + old.slice(b + E.length) : old.replace(/\s*$/, '\n\n') + block + '\n'; });
+      } else {
+        await App.writeNote(p, `# Revisão — ${stemOf(this.path)}\n\nFonte: [[${link}]]\n\n${block}\n`); App.renderTree?.();
+      }
+      Loading.hide(); if (opt.silent) return;
+      UI.toast(`Revisão atualizada: ${n} destaque(s).`);
+      const open = App.tabs.find(t => t.path === p);
+      if (!open) App.openBeside(p); else App.open(p);
+    } catch (e) { Loading.hide(); console.error(e); UI.toast('Não foi possível gerar a revisão: ' + (e.message || e)); }
+  }
+  /* faixa da linha de texto sob o ponto (unidades da página) */
+  lineBand(pg, [x, y]) {
+    const R = pg.el.getBoundingClientRect(); const s = this.scale; const rs = [];
+    pg.tl.querySelectorAll('span').forEach(sp => { if (!sp.textContent.trim()) return; const r = sp.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return; rs.push({ x0: (r.left - R.left) / s, x1: (r.right - R.left) / s, y0: (r.top - R.top) / s, y1: (r.bottom - R.top) / s }); });
+    if (!rs.length) return null;
+    let best = null, bd = Infinity;
+    for (const r of rs) { const cy = (r.y0 + r.y1) / 2, hh = r.y1 - r.y0; const d = y >= r.y0 && y <= r.y1 ? Math.abs(y - cy) * 0.01 : Math.min(Math.abs(y - r.y0), Math.abs(y - r.y1)); const dx = x < r.x0 ? r.x0 - x : x > r.x1 ? x - r.x1 : 0; const score = d + dx * 0.05; if (score < bd && d < hh * 0.9) { bd = score; best = r; } }
+    if (!best) return null;
+    const bh = best.y1 - best.y0, bc = (best.y0 + best.y1) / 2;
+    const line = rs.filter(r => Math.abs((r.y0 + r.y1) / 2 - bc) < bh * 0.45 && Math.abs((r.y1 - r.y0) - bh) < bh * 0.6);
+    const y0 = Math.min(...line.map(r => r.y0)), y1 = Math.max(...line.map(r => r.y1));
+    const pad = (y1 - y0) * 0.08;
+    return { y0: y0 - pad, y1: y1 + pad, x0: Math.min(...line.map(r => r.x0)), x1: Math.max(...line.map(r => r.x1)) };
+  }
+  straightItem(cur) {
+    const it = cur.it, b = cur.band; let xa = Math.min(it.p[0][0], it.p[1][0]), xb = Math.max(it.p[0][0], it.p[1][0]);
+    if (b) { xa = Math.max(xa, b.x0); xb = Math.min(xb, b.x1); if (xb < xa) xb = xa; return { t: 'mark', c: it.c, rects: [[+xa.toFixed(2), +b.y0.toFixed(2), +(xb - xa).toFixed(2), +(b.y1 - b.y0).toFixed(2)]] }; }
+    return { t: 'hl', c: it.c, w: it.w, p: [[xa, it.p[0][1]], [xb, it.p[0][1]]] };
+  }
   eraseAt(pg, [x, y]) {
-    const items = this.ann.pages[pg.i]; if (!items) return; const r = 7 / this.scale; let changed = false;
+    const items = this.ann.pages[pg.i]; if (!items) return; const r = (this.eraserR || 7) / this.scale; let changed = false;
     for (let j = items.length - 1; j >= 0; j--) if (INK.hit(items[j], x, y, r)) { this.cur.erased.push({ item: items[j], idx: j }); items.splice(j, 1); changed = true; }
     if (changed) this.drawInk(pg);
   }
@@ -3604,14 +3908,16 @@ class PdfView {
     const pop = h('div', { class: 'sel-pop' },
       h('span', { class: 'sel-colors' }, ...Settings.get('hlColors').map(c => h('button', { class: 'sel-dot' + (c === this.hlColor ? ' on' : ''), title: 'Marcar com esta cor', style: { background: c }, onmousedown: e => e.preventDefault(), onclick: () => { this.hlColor = c; this.saveToolState(); const cur = getSelection(); const rr = cur.rangeCount ? [...cur.getRangeAt(0).getClientRects()].filter(q => q.width > 1 && q.height > 1) : rects; this.markSelection(rr.length ? rr : rects); cur.removeAllRanges(); this.hideSelPop(); } }))),
       h('button', { text: 'Copiar', onmousedown: e => e.preventDefault(), onclick: () => { navigator.clipboard.writeText(text); UI.toast('Copiado.'); this.hideSelPop(); } }),
-      h('button', { text: 'Enviar para nota', onmousedown: e => e.preventDefault(), onclick: () => { this.hideSelPop(); this.sendToNote(text, pageNo); } }),
+      h('button', { html: icon('link') + ' Nota', title: 'Vincular este trecho a uma nota (cita o trecho na nota, com link de volta para esta página)', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.linkToNote(rr.length ? rr : rects, text); } }),
+      h('button', { html: icon('hash') + ' Tag', title: 'Marcar este trecho com uma tag', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.tagSelection(rr.length ? rr : rects, text); } }),
+      h('button', { html: icon('star') + ' Favorito', title: 'Adicionar este trecho aos favoritos', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.favSelection(rr.length ? rr : rects, text); } }),
       h('button', { html: icon('sparkles') + ' Gemini', onmousedown: e => e.preventDefault(), onclick: () => { this.hideSelPop(); AI.focus('pdf', `Sobre este trecho do PDF (p. ${pageNo}):\n\n"${text}"\n\n`); } }));
     document.body.append(pop); const last = rects[rects.length - 1]; const pr = pop.getBoundingClientRect();
     pop.style.left = Math.max(8, Math.min(last.left, innerWidth - pr.width - 8)) + 'px'; pop.style.top = (last.bottom + 8 + pr.height < innerHeight ? last.bottom + 8 : first.top - pr.height - 8) + 'px';
     this.selPop = pop;
   }
   hideSelPop() { this.selPop?.remove(); this.selPop = null; }
-  markSelection(rects) {
+  selRects(rects) {
     const byPage = new Map();
     for (const q of rects) {
       const pg = this.pages.find(p => { const b = p.el.getBoundingClientRect(); return q.top + q.height / 2 >= b.top && q.top + q.height / 2 <= b.bottom; }); if (!pg) continue;
@@ -3621,9 +3927,60 @@ class PdfView {
     for (const [pg, rs] of byPage) {
       rs.sort((a, b) => a[1] - b[1] || a[0] - b[0]); const merged = [];
       for (const r of rs) { const m = merged.find(x => Math.abs(x[1] - r[1]) < r[3] * 0.5 && r[0] <= x[0] + x[2] + 3); if (m) { const x2 = Math.max(m[0] + m[2], r[0] + r[2]); m[0] = Math.min(m[0], r[0]); m[2] = x2 - m[0]; m[3] = Math.max(m[3], r[3]); } else merged.push(r.slice()); }
-      const it = { t: 'mark', c: this.hlColor, rects: merged }; (this.ann.pages[pg.i] ||= []).push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); this.drawInk(pg);
+      byPage.set(pg, merged);
+    }
+    return byPage;
+  }
+  markSelection(rects) {
+    for (const [pg, merged] of this.selRects(rects)) {
+      const it = { t: 'mark', c: this.hlColor, rects: merged, ts: Date.now() }; (this.ann.pages[pg.i] ||= []).push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); this.drawInk(pg);
     }
     this.saveSoon();
+  }
+  /* ---------- vínculos de trechos: nota, tag, favorito ---------- */
+  curSelRects() { const s = getSelection(); return s && s.rangeCount ? [...s.getRangeAt(0).getClientRects()].filter(q => q.width > 1 && q.height > 1) : []; }
+  linkItemFor(rects, text) {
+    const by = this.selRects(rects); const first = [...by.entries()][0]; if (!first) return null;
+    const [pg, merged] = first; const arr = (this.ann.pages[pg.i] ||= []);
+    // reaproveita um vínculo existente sobre o mesmo trecho
+    let it = arr.find(x => x.t === 'link' && JSON.stringify(x.rects) === JSON.stringify(merged));
+    if (!it) { it = { t: 'link', rects: merged, txt: text, ts: Date.now(), notes: [], tags: [] }; arr.push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); }
+    this.drawInk(pg); this.saveSoon(); return { it, pg };
+  }
+  async linkToNote(rects, text, ex) {
+    const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; const pageNo = pg.i + 1;
+    const notes = [...App.notes.values()].sort((a, b) => b.mtime - a.mtime).map(n => n.path);
+    const quote = `\n> [!quote] ${stemOf(this.path)}, p. ${pageNo}\n` + text.split('\n').map(l => '> ' + l).join('\n') + `\n> [[${App.linkText(this.path)}#page=${pageNo}|abrir no PDF]]\n`;
+    const done = async p => { await App.editNote(p, cur => cur.replace(/\s*$/, '') + '\n' + quote); if (!it.notes.includes(p)) it.notes.push(p); this.saveSoon(); this.drawInk(pg); UI.toast('Trecho vinculado a “' + stemOf(p) + '”.'); };
+    UI.picker({ placeholder: 'Vincular este trecho a qual nota? (Shift+Enter cria nova)', hint: 'O trecho é citado na nota com um link de volta para esta página do PDF',
+      items: q => notes.map(p => ({ p, m: fuzzy(q, stemOf(p)) })).filter(x => x.m).sort((a, b) => q ? b.m.score - a.m.score : 0).slice(0, 60).map(x => x.p),
+      render: p => icon('filetext') + '<span class="main">' + esc(stemOf(p)) + '</span><span class="sub">' + esc(dirOf(p)) + '</span>',
+      onPick: done, onEmptyEnter: async q => { const p = await App.createNote(dirOf(this.path), q || ('Notas — ' + stemOf(this.path)), '', { open: false }); await done(p); } });
+  }
+  async tagSelection(rects, text, ex) {
+    const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r;
+    const all = [...(Panels.allTags?.() || new Map()).keys()];
+    const add = async t => { t = String(t || '').trim().replace(/^#+/, '').replace(/\s+/g, '-'); if (!t) return; if (!it.tags.includes(t)) it.tags.push(t); this.saveSoon(); this.drawInk(pg); await this.buildReview({ silent: true }); UI.toast('Tag #' + t + ' aplicada ao trecho.'); };
+    UI.picker({ placeholder: 'Tag para este trecho (Enter cria se não existir)', hint: 'As tags dos trechos entram no arquivo de revisão e aparecem no painel de tags e na busca',
+      items: q => { const n = norm(q.replace(/^#/, '')); const l = all.filter(t => !n || norm(t).includes(n)).slice(0, 80); if (n && !all.some(t => norm(t) === n)) l.unshift('＋' + q.replace(/^#/, '')); return l; },
+      render: t => icon('hash') + '<span class="main">' + esc(t.startsWith('＋') ? 'Criar #' + t.slice(1) : '#' + t) + '</span>',
+      onPick: t => add(t.startsWith('＋') ? t.slice(1) : t), onEmptyEnter: q => add(q) });
+  }
+  favSelection(rects, text) {
+    const r = this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r;
+    const label = text.replace(/\s+/g, ' ').slice(0, 90); const key = `${this.path}#page=${pg.i + 1}::${label}`;
+    if (!App.bookmarks.includes(key)) { App.bookmarks.push(key); App.saveBookmarks(); Panels.refresh(); }
+    it.fav = key; this.saveSoon(); this.drawInk(pg); UI.toast('Trecho adicionado aos favoritos.');
+  }
+  linkMenu(e, pg, it) {
+    const items = [];
+    (it.notes || []).forEach(p => items.push({ label: 'Abrir nota “' + stemOf(p) + '”', icon: 'filetext', action: () => App.fileMap.has(p) ? App.openBeside(p) : UI.toast('A nota não existe mais.') }));
+    (it.tags || []).forEach(t => items.push({ label: 'Ver tag #' + t, icon: 'hash', action: () => Search.run('tag:#' + t) }));
+    if (it.fav) items.push({ label: 'Remover dos favoritos', icon: 'star', action: () => { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); it.fav = null; this.saveSoon(); } });
+    const rr = it.rects; const text = it.txt || '';
+    items.push('-', { label: 'Vincular a outra nota…', icon: 'link', action: () => this.linkToNote([], text, { it, pg }) }, { label: 'Adicionar tag…', icon: 'hash', action: () => this.tagSelection([], text, { it, pg }) },
+      { label: 'Remover este vínculo', icon: 'trash', danger: true, action: () => { const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); if (it.fav) { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); } this.drawInk(pg); this.saveSoon(); } });
+    UI.menu(e.clientX, e.clientY, items);
   }
   sendToNote(text, pageNo) {
     const notes = [...App.notes.values()].sort((a, b) => b.mtime - a.mtime).map(n => n.path);
@@ -3664,7 +4021,7 @@ class PdfView {
     const io = this.thumbIO = new IntersectionObserver(ents => ents.forEach(async en => {
       if (!en.isIntersecting || en.target.dataset.r) return; en.target.dataset.r = 1; const p = this.pages[+en.target.dataset.i];
       const vp = p.page.getViewport({ scale: 220 / p.w }); const cv = en.target.querySelector('canvas'); cv.width = vp.width; cv.height = vp.height;
-      await p.page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise; const c = cv.getContext('2d'); c.setTransform(220 / p.w, 0, 0, 220 / p.w, 0, 0); (this.ann.pages[p.i] || []).forEach(it => INK.draw(c, it));
+      await p.page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise; const c = cv.getContext('2d'); c._thumb = true; c.setTransform(220 / p.w, 0, 0, 220 / p.w, 0, 0); (this.ann.pages[p.i] || []).forEach(it => INK.draw(c, it));
     }), { root: this.thumbs, rootMargin: '300px' });
     this.pages.forEach(p => { const t = h('div', { class: 'th', 'data-i': p.i, onclick: () => this.gotoPage(p.i + 1) }, h('canvas'), String(p.i + 1)); this.thumbs.append(t); io.observe(t); });
   }
@@ -3704,7 +4061,7 @@ class PdfView {
     for (const [k, items] of Object.entries(this.ann.pages)) {
       if (!items?.length || !pages[+k]) continue; const pg = this.pages[+k]; const P = pages[+k];
       const sc = Math.min(3, 4000 / Math.max(pg.w, pg.h)); const cv = h('canvas', { width: Math.ceil(pg.w * sc), height: Math.ceil(pg.h * sc) });
-      const c = cv.getContext('2d'); c.setTransform(sc, 0, 0, sc, 0, 0); items.forEach(it => INK.draw(c, it));
+      const c = cv.getContext('2d'); c._exp = true; c.setTransform(sc, 0, 0, sc, 0, 0); items.forEach(it => INK.draw(c, it));
       const png = await doc.embedPng(new Uint8Array(await (await new Promise(r => cv.toBlob(r, 'image/png'))).arrayBuffer()));
       const cb = P.getCropBox(); const rot = ((P.getRotation().angle % 360) + 360) % 360;
       const o = { 0: { x: cb.x, y: cb.y, w: cb.width, h: cb.height }, 90: { x: cb.x + cb.width, y: cb.y, w: cb.height, h: cb.width }, 180: { x: cb.x + cb.width, y: cb.y + cb.height, w: cb.width, h: cb.height }, 270: { x: cb.x, y: cb.y + cb.height, w: cb.height, h: cb.width } }[rot] || { x: cb.x, y: cb.y, w: cb.width, h: cb.height };

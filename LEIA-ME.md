@@ -126,3 +126,45 @@ No anotador de PDF:
 | V | Selecionar texto |
 | Ctrl/⌘+Z | Desfazer |
 | Ctrl/⌘+F | Buscar no PDF |
+
+## Canetas, marca-texto e borracha no PDF
+
+- Tipos de caneta: com a ferramenta Caneta, o botão com o nome da caneta abre a lista. As opções são esferográfica, tinteiro (traço caligráfico), lápis, marcador (espessura sempre igual) e pincel (muito sensível à pressão). A pressão funciona com a Apple Pencil, a S Pen e as canetas de PC.
+- Cores: a barra mostra as seis cores usadas por último. O círculo colorido abre a paleta, com 30 cores para a caneta e 18 para o marca-texto, e a opção "Outra cor…".
+- Tamanho do ponto: além dos quatro tamanhos rápidos, o botão "pt ▾" abre um controle deslizante com prévia do traço e 16 tamanhos prontos.
+- Destaque reto: com o marca-texto, o botão "Reto/Livre" alterna o modo. No modo reto, o destaque fica na horizontal, na altura exata da linha do texto, e não passa do fim da linha. Se não houver texto sob a caneta (PDF escaneado), vira uma faixa reta na espessura escolhida.
+- Borracha:
+  - O botão lateral da S Pen apaga enquanto estiver pressionado, com qualquer ferramenta.
+  - A ponta-borracha de canetas de PC (Surface e similares) também apaga.
+  - Na barra da borracha há quatro tamanhos.
+  - Com "Só caneta" ligado, dois toques rápidos com o dedo na página alternam entre a caneta e a borracha.
+  - O duplo toque da Apple Pencil não chega aos sites: o iPadOS o reserva para os próprios apps. Por isso, no iPad, use o toque duplo com o dedo.
+
+## Arquivo de revisão dos destaques
+
+No topo do PDF, o botão "Revisão" gera a nota "Revisão — <nome do PDF>", na mesma pasta do PDF, e a abre ao lado.
+
+- A nota traz o texto de cada destaque, na ordem em que foi feito, com a cor do marca-texto e um link para a página do PDF. Entram os destaques feitos com o marca-texto (reto ou livre), os feitos pela seleção de texto e o texto dos post-its.
+- A cada novo clique, a parte automática é refeita com todos os destaques, inclusive os novos. Ela fica entre duas marcas invisíveis na leitura. O que você escrever fora delas, acima ou abaixo, é preservado.
+- Destaques feitos antes desta versão não têm registro de horário. Eles entram primeiro, na ordem das páginas.
+- Em PDF escaneado, sem texto reconhecível, o destaque aparece como "destaque sem texto reconhecível".
+
+## Post-its no PDF
+
+- Escolha a ferramenta Post-it (ícone de bilhete, ou a tecla N) e toque na página onde quer colar a nota.
+- O post-it abre como um cartão para escrever. No cabeçalho dele dá para:
+  - arrastar o post-it para outro lugar;
+  - trocar a cor (6 opções);
+  - recolher o cartão, deixando só um ícone colado na página;
+  - excluir o post-it.
+- O texto é salvo automaticamente, entra no arquivo de revisão e sai no PDF exportado.
+
+## Vincular trechos do PDF a notas, tags e favoritos
+
+Selecione um trecho com a ferramenta de seleção, pelo mouse ou pela caneta. O menu que aparece tem três botões:
+
+- Nota: cita o trecho na nota escolhida, com um link de volta para a página do PDF. O vínculo aparece nos backlinks e no grafo. Shift+Enter cria uma nota nova.
+- Tag: marca o trecho com uma tag, nova ou já existente. A tag entra no arquivo de revisão e aparece no painel de tags e na busca.
+- Favorito: o trecho vai para os favoritos. Clicar nele abre o PDF direto na página.
+
+Os trechos vinculados ficam sublinhados em azul tracejado. Tocar neles abre um menu para abrir a nota, ver a tag, adicionar outros vínculos ou removê-los.
