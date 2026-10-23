@@ -567,6 +567,23 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .stk-card{max-width:min(230px,80vw)}
 .pdf-flash{position:absolute;pointer-events:none;z-index:5;border-radius:3px;background:rgba(255,170,0,.45);box-shadow:0 0 0 3px rgba(255,140,0,.6);animation:pdfflash 2.4s ease-out forwards}
 @keyframes pdfflash{0%,60%{opacity:1}100%{opacity:0}}
+/* ---- vínculos: redação no destino e marcador na origem ---- */
+.inlink-badge{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:0 6px;height:20px;border-radius:10px;background:var(--accent-bg);color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer;vertical-align:2px;user-select:none;-webkit-user-select:none;font-style:normal;text-indent:0}
+.inlink-badge svg.i{width:12px;height:12px}
+.inlink-pop{position:fixed;z-index:180;max-height:min(70vh,560px);overflow:auto;padding:10px}
+.inlink-item{border-top:1px solid var(--border);padding:8px 2px}
+.inlink-src{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:var(--link);cursor:pointer;margin-bottom:4px}
+.inlink-src svg.i{width:14px;height:14px}
+.inlink-item .md{font-size:14px}
+.link-card{position:fixed;z-index:180;max-height:min(75vh,640px);overflow:auto;padding:12px}
+.link-card .lc-target{border-left:3px solid var(--accent);padding:4px 0 4px 10px;margin:10px 0}
+.link-card .lc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.link-card .md{font-size:14.5px;text-align:justify}
+.link-card .lc-note{font-size:13px;margin:6px 0;display:flex;align-items:center;gap:6px}
+.link-card .lc-tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.link-card .lc-acts{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
+.btn.sm.danger{color:var(--danger)}
+.embed.embed-dispo{border-left:3px solid var(--accent);background:var(--bg2)}
 
 </style>
 </head>
@@ -1236,6 +1253,25 @@ const Blocks = {
     const sc = b => { const t = norm(b.text); if (!words.every(w => t.includes(w))) return null; return (b.heading ? 50 : 0) + (t.startsWith(words[0]) ? 30 : 0) - t.indexOf(words[0]) * 0.01; };
     return list.map(b => [b, sc(b)]).filter(x => x[1] !== null).sort((a, b) => b[1] - a[1]).map(x => x[0]);
   },
+  /* linhas que formam a redação de um dispositivo (artigo com seus §§, incisos e alíneas) ou de um item de lista com seus subitens */
+  dispoRange(text, line) {
+    const lines = text.split('\n'); let items = []; try { items = Lex.analyze(text).items || []; } catch (e) { }
+    const rank = { art: 1, par: 2, inc: 3, al: 4 }; const it = items[line]; let end = line + 1;
+    if (it && rank[it.kind]) {
+      const r = rank[it.kind];
+      for (; end < lines.length; end++) { const x = items[end]; if (/^\s*#{1,6}\s/.test(lines[end]) || (x && (x.kind === 'struct' || (rank[x.kind] && rank[x.kind] <= r)))) break; }
+    } else if (/^(\s*)[-*+]\s|^(\s*)\d+[.)]\s/.test(lines[line] || '')) {
+      const ind = /^\s*/.exec(lines[line])[0].replace(/\t/g, '    ').length;
+      for (; end < lines.length; end++) { const l = lines[end]; if (!l.trim()) continue; if (/^\s*/.exec(l)[0].replace(/\t/g, '    ').length <= ind) break; }
+    }
+    while (end > line + 1 && !lines[end - 1].trim()) end--;
+    return [line, end];
+  },
+  /* redação de um dispositivo, sem as linhas inteiramente revogadas (tachadas) */
+  dispoText(text, line) {
+    const [a, b] = Blocks.dispoRange(text, line); const lines = text.split('\n').slice(a, b);
+    return lines.filter((l, i) => i === 0 || !/^\s*(?:[-*+]\s+)?~~[\s\S]*~~\s*(\^[\w-]+)?\s*$/.test(l)).join('\n');
+  },
   newId(text) { let id; do { id = Math.random().toString(36).slice(2, 8); } while (text.includes('^' + id)); return id; },
   find(text, id) { const re = new RegExp('\\s\\^' + id.replace(/[^\w-]/g, '') + '\\s*$'); const lines = text.split('\n'); const i = lines.findIndex(l => re.test(l)); return i < 0 ? null : { line: i, text: Blocks.plain(lines[i].replace(BID_RE, '')) }; },
   /* garante um ^id no fim da linha; devolve o id. Edita a nota aberta (preservando o cursor) ou grava o arquivo. */
@@ -1275,7 +1311,7 @@ const Renderer = {
   },
   section(body, sub) {
     if (!sub || sub.startsWith('^')) {
-      if (sub) { const b = Blocks.find(body, sub.slice(1)); return b ? body.split('\n')[b.line].replace(BID_RE, '') : '*Parágrafo não encontrado (' + sub + ').*'; }
+      if (sub) { const b = Blocks.find(body, sub.slice(1)); return b ? Blocks.dispoText(body, b.line) : '*Parágrafo não encontrado (' + sub + ').*'; }
       return body;
     }
     const lines = body.split('\n'); const want = norm(sub.split('#').pop());
@@ -1371,8 +1407,8 @@ const Renderer = {
       else if (ext === 'md') {
         if (depth >= 3 || p === from && !sub) { ph.replaceWith(h('a', { class: 'internal-link', 'data-href': target, href: '#', text: target })); return; }
         const text = await App.readNote(p);
-        const box = h('div', { class: 'embed', 'data-from': p }, h('div', { class: 'embed-title', html: icon('link') + `<a class="internal-link" href="#" data-href="${esc(p.replace(/\.md$/, ''))}" data-sub="${esc(sub)}">${esc(stemOf(p))}${sub ? ' › ' + esc(sub) : ''}</a>` }));
-        box.append(Renderer.render(text, p, { section: sub, depth: depth + 1, noProps: true }));
+        const box = h('div', { class: 'embed', 'data-from': p }, h('div', { class: 'embed-title', html: icon('link') + `<a class="internal-link" href="#" data-href="${esc(p.replace(/\.md$/, ''))}" data-sub="${esc(sub)}">${esc(alias || (sub && sub.startsWith('^') ? (() => { const b = Blocks.find(text, sub.slice(1)); return b ? LinkCopy.labelFor(p, text, b.line) : stemOf(p); })() : stemOf(p) + (sub ? ' › ' + sub : '')))}</a>` }));
+        box.classList.toggle('embed-dispo', !!(sub && sub.startsWith('^'))); box.append(Renderer.render(text, p, { section: sub, depth: depth + 1, noProps: true }));
         box.querySelectorAll(':scope > .md').forEach(m => { m.style.padding = '0'; m.style.maxWidth = 'none'; });
         ph.replaceWith(box);
       } else ph.replaceWith(h('a', { class: 'internal-link', href: '#', 'data-href': p, text: baseOf(p) }));
@@ -1433,7 +1469,7 @@ const App = {
     const meta = parseNote(text); const prev = this.notes.get(path);
     const sig = JSON.stringify([meta.links.map(l => [l.target, l.sub, l.embed, l.line]), [...meta.tags], meta.headings]);
     this.notes.set(path, { path, text, mtime: mtime || Date.now(), sig, ...meta });
-    if (!quiet && (!prev || prev.sig !== sig)) Panels.refreshSoon();
+    if (!prev || prev.sig !== sig) { this.notesVer = (this.notesVer || 0) + 1; if (!quiet) { Panels.refreshSoon(); Inlinks.changed(); } }
   },
   addFile(path, type = 'file') {
     const parts = path.split('/'); let cur = '';
@@ -2272,6 +2308,12 @@ const LP = (() => {
     }
     ignoreEvent() { return true; }
   }
+  class InW extends WidgetType {
+    constructor(note, id, n) { super(); this.note = note; this.id = id; this.n = n; }
+    eq(o) { return o.note === this.note && o.id === this.id && o.n === this.n; }
+    toDOM() { return Inlinks.badge(this.note, this.id, this.n); }
+    ignoreEvent() { return true; }
+  }
   class BadgeW extends WidgetType {
     constructor(label, note) { super(); this.label = label; this.note = note; }
     eq(o) { return o.label === this.label && o.note === this.note; }
@@ -2346,6 +2388,7 @@ const LP = (() => {
             if (has) out.push(Decoration.widget({ widget: new BadgeW(it.label, nv.path), side: 1 }).range(ln.from + it.end));
           }
         }
+        { const bm = BID_RE.exec(t); if (bm) { const n = Inlinks.get(nv.path, bm[1]).length; if (n) out.push(Decoration.widget({ widget: new InW(nv.path, bm[1], n), side: -1 }).range(ln.from + bm.index)); } }
         const reg = nv._align.find(r => ln.number >= r.a && ln.number <= r.b);
         if (reg) {
           if (ln.number === reg.a || ln.number === reg.b) { if (!rev(ln.from, ln.to)) { add(ln.from, ln.to, hide); out.push(line('cm-tagline').range(ln.from)); } }
@@ -2606,6 +2649,43 @@ const MDHL = {
   }
 };
 
+/* vínculos que chegam a cada parágrafo/dispositivo (mostrados automaticamente na origem) */
+const Inlinks = {
+  cache: null, ver: -1,
+  map() {
+    if (this.cache && this.ver === App.notesVer) return this.cache;
+    const m = new Map();
+    for (const [p, n] of App.notes) for (const l of n.links || []) {
+      if (!l.sub || !l.sub.startsWith('^')) continue; const r = l.target ? App.resolve(l.target, p) : p; if (!r) continue;
+      const k = r + '|' + l.sub.slice(1); (m.get(k) || m.set(k, []).get(k)).push({ from: p, line: l.line, embed: l.embed });
+    }
+    this.cache = m; this.ver = App.notesVer; return m;
+  },
+  get(path, id) { return (this.map().get(path + '|' + id) || []).filter(s => !(s.from === path)); },
+  changed: debounce(() => { App.tabs.forEach(t => { const v = t.view; if (!(v instanceof NoteView)) return; if (v.cm) v.cm.dispatch({ effects: LP_REFRESH.of(null) }); if (v.mode === 'read') v.decorateInlinks?.(); }); }, 900),
+  badge(path, id, n) { return h('span', { class: 'inlink-badge', 'data-note': path, 'data-bid': id, title: n + ' vínculo(s) para este dispositivo — toque para ver', html: icon('link') + n }); },
+  async show(anchor, path, id) {
+    Popover.hide?.(); document.querySelectorAll('.inlink-pop').forEach(x => x.remove());
+    const srcs = this.get(path, id);
+    const el = h('div', { class: 'popover inlink-pop' }, h('div', { class: 'cpop-head' }, h('b', { text: 'Vínculos para este dispositivo' }), h('span', { class: 'sub', text: srcs.length + ' origem(ns)' })));
+    for (const s of srcs) {
+      const n = App.notes.get(s.from); if (!n) continue;
+      const all = n.text.split('\n'); let line = (all[s.line] || '');
+      if (line.replace(/!?\[\[[^\]]*\]\]/g, '').replace(/[\s>*-]/g, '').length < 12) { let k = s.line - 1; while (k >= 0 && !all[k].trim()) k--; if (k >= 0 && !/^#/.test(all[k])) line = all[k] + '\n\n' + line; }
+      const item = h('div', { class: 'inlink-item', 'data-from': s.from },
+        h('div', { class: 'inlink-src', html: icon(/^Revisão — /.test(stemOf(s.from)) ? 'review' : 'filetext') + esc(stemOf(s.from)), onclick: () => { el.remove(); App.openBeside(s.from, { line: s.line }); } }),
+        Renderer.render(line.replace(/!?\[\[([^\]]*?)#\^[\w-]+(\|[^\]]*)?\]\]/g, (m, t, a) => a ? a.slice(1) ? '<b>' + esc(a.slice(1)) + '</b>' : '' : '') || ' ', s.from, { noProps: true }));
+      el.append(item);
+    }
+    if (!srcs.length) el.append(h('div', { class: 'empty', text: 'Nenhum vínculo.' }));
+    document.body.append(el); const r = anchor.getBoundingClientRect(); const w = Math.min(460, innerWidth - 16);
+    el.style.width = w + 'px'; el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + 'px';
+    const hh = el.offsetHeight; el.style.top = (r.bottom + 8 + hh < innerHeight ? r.bottom + 8 : Math.max(8, r.top - hh - 8)) + 'px';
+    const off = e => { if (!el.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) { el.remove(); document.removeEventListener('pointerdown', off, true); } };
+    setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+  }
+};
+document.addEventListener('click', e => { const b = e.target.closest?.('.inlink-badge'); if (!b) return; e.preventDefault(); e.stopPropagation(); Inlinks.show(b, b.dataset.note, b.dataset.bid); }, true);
 /* copiar o link de um parágrafo ou dispositivo (Art. 20, § 1º…) */
 const LinkCopy = {
   async textOf(path) { const v = App.tabs.map(t => t.view).find(v => v instanceof NoteView && v.path === path); return v ? v.ta.value : await App.readNote(path); },
@@ -2615,21 +2695,21 @@ const LinkCopy = {
     const b = Blocks.plain((text.split('\n')[line] || '').replace(BID_RE, ''));
     return b.length > 60 ? b.slice(0, 60) + '…' : b;
   },
-  async line(path, line) {
+  async line(path, line, plain) {
     const text = await this.textOf(path);
     if (!(text.split('\n')[line] || '').trim()) { UI.toast('Escolha um parágrafo com texto.', true); return null; }
     let id; try { id = await Blocks.ensure(path, line); } catch (e) { return null; }
-    return this.copy({ path, sub: '^' + id, label: this.labelFor(path, text, line) });
+    return this.copy({ path, sub: '^' + id, label: this.labelFor(path, text, line) }, plain);
   },
-  async dispositivo(path, label) {
+  async dispositivo(path, label, plain) {
     const text = await this.textOf(path); let items = []; try { items = Lex.analyze(text).items || []; } catch (e) { }
     const line = items.findIndex(x => x?.label === label); if (line < 0) { UI.toast('Dispositivo não encontrado: ' + label, true); return null; }
-    return this.line(path, line);
+    return this.line(path, line, plain);
   },
-  linkText(o) { return `[[${App.linkText(o.path)}#${o.sub}|${String(o.label || '').replace(/[|\]\[]/g, ' ')}]]`; },
-  async copy(o) {
-    const link = this.linkText(o); LastLink.set(o);
-    try { await navigator.clipboard.writeText(link); UI.toast('Link copiado: ' + o.label + '. Cole numa nota, ou selecione um trecho de PDF e toque em “Vincular ao copiado”.'); }
+  linkText(o, embed) { return `${embed ? '!' : ''}[[${App.linkText(o.path)}#${o.sub}|${String(o.label || '').replace(/[|\]\[]/g, ' ')}]]`; },
+  async copy(o, plain) {
+    const embed = !plain && extOf(o.path) === 'md' && o.sub.startsWith('^'); const link = this.linkText(o, embed); LastLink.set({ ...o, embed });
+    try { await navigator.clipboard.writeText(link); UI.toast((embed ? 'Copiado com a redação: ' : 'Link copiado: ') + o.label + '. Cole numa nota, ou selecione um trecho de PDF e toque em “Vincular ao copiado”.'); }
     catch (e) { UI.prompt('Copie o link', link); }
     return link;
   }
@@ -2697,9 +2777,14 @@ class NoteView {
     else if (!initial) { this.cm.requestMeasure(); this.cm.focus(); }
   }
   toggleMode() { this.setMode(this.mode === 'read' ? 'live' : 'read'); }
+  decorateInlinks() {
+    if (!this.reader) return; this.reader.querySelectorAll('.inlink-badge').forEach(b => b.remove());
+    this.reader.querySelectorAll('[data-block-id]').forEach(el => { if (el.closest('.embed')) return; const n = Inlinks.get(this.path, el.dataset.blockId).length; if (n) { const sp = el.querySelector(':scope > .blockid') || el.querySelector('.blockid'); (sp || el).after?.(Inlinks.badge(this.path, el.dataset.blockId, n)); } });
+  }
   renderReader() {
     const st = this.reader.scrollTop; this.reader.innerHTML = '';
     this.reader.append(Renderer.render(this.text, this.path, { inlineTitle: true }));
+    this.decorateInlinks();
     this.reader.scrollTop = st;
   }
   grow() { }
@@ -2810,8 +2895,10 @@ class NoteView {
       const pos = this.cm.posAtCoords({ x: e.clientX, y: e.clientY }); if (pos == null) return; line = this.cm.state.doc.lineAt(pos).number - 1;
     }
     e.preventDefault();
-    const items = [{ label: 'Copiar link deste ' + (dispo || (line != null && this.isDispo(line)) ? 'dispositivo' : 'parágrafo'), icon: 'copy', action: () => bid ? LinkCopy.copy({ path: this.path, sub: '^' + bid, label: dispo ? stemOf(this.path) + ', ' + dispo : stemOf(this.path) }) : dispo ? LinkCopy.dispositivo(this.path, dispo) : this.copyBlockLink(line) }];
-    const ll = LastLink.get(); if (this.mode !== 'read' && ll) items.push({ label: 'Colar link copiado: ' + ll.label, icon: 'link', action: () => { this.cm.dispatch({ selection: { anchor: this.cm.state.doc.line(line + 1).to } }); this.insertAtCursor(' ' + LinkCopy.linkText(ll)); } });
+    const what = dispo || (line != null && this.isDispo(line)) ? 'dispositivo' : 'parágrafo';
+    const doCopy = plain => bid ? LinkCopy.copy({ path: this.path, sub: '^' + bid, label: dispo ? stemOf(this.path) + ', ' + dispo : stemOf(this.path) }, plain) : dispo ? LinkCopy.dispositivo(this.path, dispo, plain) : LinkCopy.line(this.path, line, plain);
+    const items = [{ label: 'Copiar ' + what + ' com a redação (mostra o texto onde for colado)', icon: 'copy', action: () => doCopy(false) }, { label: 'Copiar só o link do ' + what, icon: 'link', action: () => doCopy(true) }];
+    const ll = LastLink.get(); if (this.mode !== 'read' && ll) items.push({ label: 'Colar link copiado: ' + ll.label, icon: 'link', action: () => { this.cm.dispatch({ selection: { anchor: this.cm.state.doc.line(line + 1).to } }); this.insertAtCursor((ll.embed ? '\n' : ' ') + LinkCopy.linkText(ll, ll.embed)); } });
     UI.menu(e.clientX, e.clientY, items);
   }
   isDispo(line) { try { return !!Lex.analyze(this.ta.value).items?.[line]?.label; } catch (e) { return false; } }
@@ -3035,7 +3122,7 @@ const Panels = {
   },
   snippet(text, line, word) {
     const ln = (text.split('\n')[line] || '').replace(/<[^>]+>/g, '').replace(/%%[^%]*%%/g, '').replace(/^>\s*(\[![^\]]+\][-+]?\s*)?/, '').trim(); let s = esc(ln.length > 220 ? ln.slice(0, 220) + '…' : ln);
-    s = s.replace(/\[\[([^\]]+)\]\]/g, (m, x) => '<mark>' + x.split('|').pop() + '</mark>');
+    s = s.replace(/!?\[\[([^\]]+)\]\]/g, (m, x) => '<mark>' + x.split('|').pop() + '</mark>');
     if (word) { const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); s = s.replace(re, '<mark>$1</mark>'); }
     return s;
   },
@@ -3945,7 +4032,7 @@ class PdfView {
     try {
       const link = App.linkText(this.path); const lines = []; let n = 0;
       for (const { it, pg } of entries) {
-        const pn = pg.i + 1, pl = `[[${link}#page=${pn}|p. ${pn}]]`;
+        const pn = pg.i + 1, pl = `[[${link}#page=${pn}${it.ts ? '&hl=' + it.ts : ''}|p. ${pn}]]`;
         if (it.t === 'sticky') { const body = (it.text || '').trim(); if (!body) continue; lines.push(`> [!note] Post-it — ${pl}`, ...body.split('\n').map(l => '> ' + l), ''); continue; }
         if (it.t === 'link') { const tg = (it.tags || []).map(t => '#' + t).join(' '); const nt = [...(it.notes || []).filter(p => App.fileMap.has(p)).map(p => `[[${App.linkText(p)}]]`), ...(it.targets || []).filter(t => App.fileMap.has(t.path)).map(t => LinkCopy.linkText(t))].join(', '); lines.push(`- 🔗 “${(it.txt || '').replace(/\s+/g, ' ')}” — ${pl}${tg ? ' — ' + tg : ''}${nt ? ' — vinculado a ' + nt : ''}`, ''); continue; }
         const txt = this.textUnder(await this.pageText(pg), it);
@@ -4109,14 +4196,14 @@ class PdfView {
     const [pg, merged] = first; const arr = (this.ann.pages[pg.i] ||= []);
     // reaproveita um vínculo existente sobre o mesmo trecho
     let it = arr.find(x => x.t === 'link' && JSON.stringify(x.rects) === JSON.stringify(merged));
-    if (!it) { it = { t: 'link', rects: merged, txt: text, ts: Date.now(), notes: [], tags: [], targets: [] }; arr.push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); }
+    if (!it) { it = { t: 'link', rects: merged, txt: text, ts: Date.now(), notes: [], tags: [], targets: [] }; arr.push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); this.pageText(pg).then(tc => { const t = this.textUnder(tc, { t: 'mark', rects: merged }); if (t) { it.txt = t; this.saveSoon(); } }).catch(() => { }); }
     this.drawInk(pg); this.saveSoon(); return { it, pg };
   }
   addTarget(ex, rects, text, tg) {
     const r = ex || this.linkItemFor(rects, text); if (!r) return null; const { it, pg } = r;
     it.targets ||= []; if (!it.targets.some(t => t.path === tg.path && t.sub === tg.sub)) it.targets.push(tg);
     this.saveSoon(); this.drawInk(pg); this.buildReview({ silent: true });
-    UI.toast('Trecho vinculado a ' + tg.label + '.'); return it;
+    UI.toast('Trecho vinculado a ' + tg.label + '. Toque no trecho sublinhado para ver a redação.'); return it;
   }
   linkToCopied(rects, text, ex) { const ll = LastLink.get(); if (!ll) return UI.toast('Nenhum link copiado ainda. Numa nota, use “Copiar link” no artigo ou parágrafo.', true); if (ll.path === this.path) return UI.toast('O link copiado é deste próprio PDF.', true); this.addTarget(ex, rects, text, { path: ll.path, sub: ll.sub, label: ll.label }); }
   async copyExcerptLink(rects, text, ex) {
@@ -4166,20 +4253,46 @@ class PdfView {
     if (!App.bookmarks.includes(key)) { App.bookmarks.push(key); App.saveBookmarks(); Panels.refresh(); }
     it.fav = key; this.saveSoon(); this.drawInk(pg); UI.toast('Trecho adicionado aos favoritos.');
   }
-  linkMenu(e, pg, it) {
-    const items = [];
-    (it.targets || []).forEach(t => items.push({ label: 'Abrir ' + t.label, icon: 'link', action: () => App.fileMap.has(t.path) ? App.openBeside(t.path, { sub: t.sub }) : UI.toast('O destino não existe mais.') }));
-    (it.notes || []).forEach(p => items.push({ label: 'Abrir nota “' + stemOf(p) + '”', icon: 'filetext', action: () => App.fileMap.has(p) ? App.openBeside(p) : UI.toast('A nota não existe mais.') }));
-    (it.tags || []).forEach(t => items.push({ label: 'Ver tag #' + t, icon: 'hash', action: () => Search.run('tag:#' + t) }));
-    if (it.fav) items.push({ label: 'Remover dos favoritos', icon: 'star', action: () => { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); it.fav = null; this.saveSoon(); } });
-    const rr = it.rects; const text = it.txt || '';
+  linkMenu(e, pg, it) { this.linkCard(e, pg, it); }
+  /* cartão do trecho vinculado: mostra a redação dos dispositivos vinculados, sem precisar abrir a lei */
+  async linkCard(e, pg, it) {
+    document.querySelectorAll('.link-card').forEach(x => x.remove());
+    const text = it.txt || '';
+    const el = h('div', { class: 'popover link-card' });
+    const close = () => { el.remove(); document.removeEventListener('pointerdown', off, true); };
+    const off = ev => { if (!el.contains(ev.target) && !ev.target.closest?.('.menu,.overlay')) close(); };
+    const bodyBox = h('div', { class: 'lc-body' });
+    for (const t of it.targets || []) {
+      const sec = h('div', { class: 'lc-target' }, h('div', { class: 'lc-head' }, h('b', { text: t.label }), h('button', { class: 'btn sm', html: icon('book') + 'Abrir na lei', onclick: () => { close(); App.fileMap.has(t.path) ? App.openBeside(t.path, { sub: t.sub }) : UI.toast('O destino não existe mais.'); } })));
+      const content = h('div', { class: 'lc-text md' }); sec.append(content); bodyBox.append(sec);
+      (async () => {
+        if (!App.fileMap.has(t.path)) { content.textContent = 'O destino não existe mais.'; return; }
+        try {
+          const txt = await LinkCopy.textOf(t.path);
+          if (t.sub.startsWith('^')) { const b = Blocks.find(txt, t.sub.slice(1)); if (!b) { content.textContent = 'O dispositivo não foi encontrado na nota (talvez o código tenha sido apagado).'; return; } content.replaceWith(Renderer.render(Blocks.dispoText(txt, b.line), t.path, { noProps: true })); }
+          else content.replaceWith(Renderer.render(txt, t.path, { section: t.sub, noProps: true }));
+        } catch (er) { content.textContent = 'Não foi possível ler a nota.'; }
+      })();
+    }
+    (it.notes || []).forEach(p => bodyBox.append(h('div', { class: 'lc-note', html: icon('quote') + 'Citado em ' }, h('a', { href: '#', text: stemOf(p), onclick: ev => { ev.preventDefault(); close(); App.fileMap.has(p) ? App.openBeside(p) : UI.toast('A nota não existe mais.'); } }))));
+    if ((it.tags || []).length) bodyBox.append(h('div', { class: 'lc-tags' }, ...it.tags.map(t => h('a', { href: '#', class: 'tag', text: '#' + t, onclick: ev => { ev.preventDefault(); close(); Search.run('tag:#' + t); } }))));
+    if (!bodyBox.children.length) bodyBox.append(h('div', { class: 'empty', text: 'Este trecho ainda não está vinculado a nada.' }));
     const ll = LastLink.get();
-    items.push('-', { label: 'Copiar link deste trecho', icon: 'copy', action: () => this.copyExcerptLink([], text, { it, pg }) });
-    if (ll && ll.path !== this.path) items.push({ label: 'Vincular ao copiado: ' + ll.label, icon: 'link', action: () => this.linkToCopied([], text, { it, pg }) });
-    items.push({ label: 'Vincular a outra nota…', icon: 'link', action: () => this.linkToNote([], text, { it, pg }) }, { label: 'Adicionar tag…', icon: 'hash', action: () => this.tagSelection([], text, { it, pg }) },
-      { label: 'Remover este vínculo', icon: 'trash', danger: true, action: () => { const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.favSync([it], false); this.drawInk(pg); this.saveSoon(); } });
-    UI.menu(e.clientX, e.clientY, items);
+    const acts = h('div', { class: 'lc-acts' },
+      h('button', { class: 'btn sm', html: icon('copy') + 'Copiar link do trecho', onclick: () => { close(); this.copyExcerptLink([], text, { it, pg }); } }),
+      ll && ll.path !== this.path ? h('button', { class: 'btn sm', html: icon('link') + 'Vincular ao copiado', title: ll.label, onclick: () => { close(); this.linkToCopied([], text, { it, pg }); } }) : '',
+      h('button', { class: 'btn sm', html: icon('link') + 'Vincular a artigo/nota…', onclick: () => { close(); this.linkToNote([], text, { it, pg }); } }),
+      h('button', { class: 'btn sm', html: icon('hash') + 'Tag', onclick: () => { close(); this.tagSelection([], text, { it, pg }); } }),
+      it.fav ? h('button', { class: 'btn sm', html: icon('star') + 'Tirar dos favoritos', onclick: () => { close(); this.favSync([it], false); it.fav = null; this.saveSoon(); } }) : '',
+      h('button', { class: 'btn sm danger', html: icon('trash') + 'Remover vínculo', onclick: () => { close(); const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.favSync([it], false); this.drawInk(pg); this.saveSoon(); this.buildReview({ silent: true }); } }));
+    el.append(h('div', { class: 'cpop-head' }, h('b', { text: '“' + (text.length > 80 ? text.slice(0, 80) + '…' : text) + '”' }), h('span', { class: 'sub', text: 'p. ' + (pg.i + 1) })), bodyBox, acts);
+    document.body.append(el);
+    const w = Math.min(520, innerWidth - 16); el.style.width = w + 'px';
+    el.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';
+    const place = () => { const hh = el.offsetHeight; el.style.top = (e.clientY + 14 + hh < innerHeight ? e.clientY + 14 : Math.max(8, e.clientY - hh - 14)) + 'px'; };
+    place(); setTimeout(place, 120); setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
   }
+
   sendToNote(text, pageNo) {
     const notes = [...App.notes.values()].sort((a, b) => b.mtime - a.mtime).map(n => n.path);
     const quote = `\n> [!quote] ${stemOf(this.path)}, p. ${pageNo}\n` + text.split('\n').map(l => '> ' + l).join('\n') + `\n> [[${App.linkText(this.path)}#page=${pageNo}|abrir no PDF]]\n`;

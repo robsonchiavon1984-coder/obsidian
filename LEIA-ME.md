@@ -186,3 +186,11 @@ Os trechos vinculados ficam sublinhados em azul tracejado. Tocar neles abre um m
 - O Códex lembra a posição de cada nota e de cada PDF.
 - Ao reabrir o arquivo, mesmo depois de fechar o app, você volta ao mesmo trecho.
 - Se você abrir o arquivo por um link que aponta para um ponto específico, prevalece o ponto do link.
+
+## Redação no destino e vínculo automático na origem
+
+- Ao copiar um artigo (botão de copiar da barra de formatação ou menu do botão direito), o link sai com a redação: `![[Lei#^código|Lei, Art. 20]]`. Onde for colado, aparece o texto completo do dispositivo: caput, parágrafos, incisos e alíneas. Os incisos inteiramente revogados (tachados) ficam de fora. Não é preciso abrir a lei. No Obsidian, o mesmo link também mostra o texto.
+- Se quiser só a referência, sem o texto, use "Copiar só o link" no menu do botão direito.
+- No PDF, tocar num trecho vinculado abre um cartão com a redação do artigo. O botão "Abrir na lei" continua lá, se você precisar.
+- Na origem, cada artigo que recebe vínculos ganha automaticamente um marcador com o número de vínculos, no modo de edição e no de leitura. Tocar no marcador mostra de onde vem cada vínculo (notas e trechos de PDF), com a frase em volta, e permite abrir a origem.
+- O marcador é calculado na hora. O texto da lei não é alterado, e o marcador some sozinho quando o vínculo é apagado.
