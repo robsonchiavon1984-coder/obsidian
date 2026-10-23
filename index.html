@@ -565,6 +565,8 @@ input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--accent)}
 .sticky.up:not(.flip) .stk-card{left:0}
 .pdf-tb .grp{flex-wrap:wrap;row-gap:4px}
 .stk-card{max-width:min(230px,80vw)}
+.pdf-flash{position:absolute;pointer-events:none;z-index:5;border-radius:3px;background:rgba(255,170,0,.45);box-shadow:0 0 0 3px rgba(255,140,0,.6);animation:pdfflash 2.4s ease-out forwards}
+@keyframes pdfflash{0%,60%{opacity:1}100%{opacity:0}}
 
 </style>
 </head>
@@ -815,6 +817,25 @@ function fuzzy(q, s) {
 function hlIdx(s, idx) { const set = new Set(idx); return [...s].map((c, i) => set.has(i) ? `<em>${esc(c)}</em>` : esc(c)).join(''); }
 const safeDecode = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/* posição de leitura por arquivo (volta ao mesmo ponto ao reabrir) */
+const Pos = {
+  K: 'codex.pos',
+  key(p) { return (App.vault?.id || '') + '|' + p; },
+  all() { try { return JSON.parse(localStorage.getItem(this.K) || '{}') || {}; } catch (e) { return {}; } },
+  get(p) { return this.all()[this.key(p)] || null; },
+  set(p, v) {
+    const a = this.all(); a[this.key(p)] = { ...v, t: Date.now() };
+    const ks = Object.keys(a); if (ks.length > 500) ks.sort((x, y) => a[x].t - a[y].t).slice(0, ks.length - 500).forEach(k => delete a[k]);
+    try { localStorage.setItem(this.K, JSON.stringify(a)); } catch (e) { }
+  },
+  rename(o, n) { const a = this.all(); const ko = this.key(o); if (a[ko]) { a[this.key(n)] = a[ko]; delete a[ko]; try { localStorage.setItem(this.K, JSON.stringify(a)); } catch (e) { } } }
+};
+/* último link copiado no Códex (para vincular trechos de PDF com um toque) */
+const LastLink = {
+  get() { try { return JSON.parse(localStorage.getItem('codex.lastlink') || 'null'); } catch (e) { return null; } },
+  set(o) { try { localStorage.setItem('codex.lastlink', JSON.stringify({ ...o, t: Date.now() })); } catch (e) { } }
+};
 
 /* ===================== ARMAZENAMENTO ===================== */
 const IGNORE_DIRS = new Set(['.obsidian', '.trash', '.git', 'node_modules']);
@@ -1544,6 +1565,7 @@ const App = {
         if (changed) updates.push([moved.get(np) || np, txt]);
       }
       const revMoves = [];
+      for (const [o, nw] of moved) Pos.rename(o, nw);
       await this.vault.rename(from, to);
       /* anotações do PDF acompanham o arquivo */
       for (const [o, nw] of moved) if (extOf(o) === 'pdf') {
@@ -2018,6 +2040,7 @@ class FormatBar {
       this.sep(),
       this.btn(icon('link'), 'Link para outra nota [[ ]]', ta => { Fmt.wrap(ta, '[[', ']]'); this.v.suggest(); }),
       this.btn('<span class="ft" style="font-size:18px">¶</span>', 'Vincular a um parágrafo ou título desta nota (' + MOD + '+Shift+K)', () => this.v.pickBlock()),
+      this.btn(icon('copy'), 'Copiar o link do artigo/parágrafo onde está o cursor (' + MOD + '+Shift+C), para colar em outra nota ou vincular a um trecho de PDF', () => this.v.copyBlockLink()),
       this.btn(icon('quote').replace('<svg', '<svg style="color:var(--accent2)"'), 'Comentar o artigo/parágrafo/inciso onde está o cursor (' + MOD + '+Shift+M)', () => commentAtCursor(this.v)),
       this.btn(icon('clearfmt'), 'Limpar formatação do trecho', ta => Fmt.clear(ta)));
   }
@@ -2035,23 +2058,23 @@ const Lex = {
   ],
   ROMAN: /^(?=[IVXLCDM])M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/,
   /* tira marcações Markdown do início da linha; devolve o deslocamento */
-  strip(l) { const m = /^(\s*(?:#{1,6}\s+)?(?:>\s*)*(?:\*\*|__)?\s*)/.exec(l); const t = l.slice(m[0].length).replace(/(\*\*|__)\s*$/, ''); return { off: m[0].length, t }; },
+  strip(l) { const m = /^(\s*(?:[-*+]\s+)?(?:#{1,6}\s+)?(?:>\s*)*(?:\*\*|__)?\s*)/.exec(l); const t = l.slice(m[0].length).replace(/(\*\*|__)\s*$/, ''); return { off: m[0].length, t }; },
   ord(n) { return +String(n).replace(/\./g, '') < 10 ? n + 'º' : n; },
   /* máquina de estados: alimentada linha a linha, na ordem do texto */
   ctx() {
     const s = { art: null, par: null, inc: null, pendingRubric: false };
     return line => {
       const { off, t } = Lex.strip(line); if (!t.trim()) return null;
-      for (const [re, level, kind, loose] of Lex.STRUCT) if (re.test(t) && !(loose && s.pendingRubric)) { s.pendingRubric = true; return { kind: 'struct', level, text: t.replace(/[*_]+/g, '').trim(), name: kind }; }
+      { const ts = /^#/.test(line.trim()) ? t.replace(/^\d+(?:\.\d+)*(?:-[A-Z])?\.\s+/, '') : t; for (const [re, level, kind, loose] of Lex.STRUCT) if (re.test(ts) && !(loose && s.pendingRubric)) { s.pendingRubric = !/\s[-–—]\s\S/.test(ts); return { kind: 'struct', level, text: ts.replace(/[*_]+/g, '').replace(/\s*\((ARTS?\.?[^)]*)\)\s*$/i, '').trim(), name: kind }; } }
       let m;
       if ((m = /^(Art(?:igo)?\.?\s*(\d{1,4}(?:\.\d{3})*)\s*\.?\s*(?:º|°|ª|o(?=[\s.]))?(?:-([A-Z]{1,2}))?\.?)(?=\s|$|\*)/.exec(t))) {
         s.art = 'Art. ' + Lex.ord(m[2]) + (m[3] ? '-' + m[3] : ''); s.par = s.inc = null; s.pendingRubric = false;
         return { kind: 'art', label: s.art, start: off, end: off + m[1].length, text: t };
       }
-      if (s.art && (m = /^(§\s*(\d+)\s*(?:º|°|o(?=[\s.]))?(?:-([A-Z]))?\.?)(?=\s)/.exec(t))) { s.par = s.art + ', § ' + Lex.ord(m[2]) + (m[3] ? '-' + m[3] : ''); s.inc = null; return { kind: 'par', label: s.par, start: off, end: off + m[1].length }; }
+      if (s.art && (m = /^(§\s*(\d+)\s*(?:º|°|o(?=[\s.*]))?(?:-([A-Z]))?\.?)(?=\s|\*)/.exec(t))) { s.par = s.art + ', § ' + Lex.ord(m[2]) + (m[3] ? '-' + m[3] : ''); s.inc = null; return { kind: 'par', label: s.par, start: off, end: off + m[1].length }; }
       if (s.art && (m = /^(Par[áa]grafo\s+[úu]nico\.?)/i.exec(t))) { s.par = s.art + ', parágrafo único'; s.inc = null; return { kind: 'par', label: s.par, start: off, end: off + m[1].length }; }
-      if (s.art && (m = /^([IVXLCDM]+)(?:-[A-Z])?(?=\s*[-–—]\s)/.exec(t)) && Lex.ROMAN.test(m[1])) { s.inc = (s.par || s.art) + ', inc. ' + m[0]; return { kind: 'inc', label: s.inc, start: off, end: off + m[0].length }; }
-      if (s.inc && (m = /^([a-z])\)(?=\s)/.exec(t))) return { kind: 'al', label: s.inc + ', al. ' + m[1], start: off, end: off + m[0].length };
+      if (s.art && (m = /^([IVXLCDM]+)(?:-[A-Z])?(?=\s*[-–—](?:\*\*|__)?\s)/.exec(t)) && Lex.ROMAN.test(m[1])) { s.inc = (s.par || s.art) + ', inc. ' + m[0]; return { kind: 'inc', label: s.inc, start: off, end: off + m[0].length }; }
+      if (s.inc && (m = /^([a-z])\)(?=\s|\*)/.exec(t))) return { kind: 'al', label: s.inc + ', al. ' + m[1], start: off, end: off + m[0].length };
       if (s.pendingRubric && t.length < 160 && !/^\s*$/.test(t)) { s.pendingRubric = false; return { kind: 'rubric', text: t.replace(/[*_]+/g, '').trim() }; }
       return null;
     };
@@ -2098,7 +2121,7 @@ const Lex = {
       const it = items[i];
       if (legal && it?.kind === 'struct') { let title = it.text; const nx = items.slice(i + 1, i + 4).findIndex(x => x); const r = nx >= 0 ? items[i + 1 + nx] : null; if (r?.kind === 'rubric') title += ' — ' + r.text; nodes.push({ level: it.level, text: title, line: i, kind: 'struct' }); continue; }
       if (hm) { nodes.push({ level: hm[1].length, text: hm[2].replace(BID_RE, '').replace(/[*_=`]/g, ''), line: i, kind: 'h' }); continue; }
-      if (legal && it?.kind === 'art') { const rest = it.text.slice(it.end - Lex.strip(lines[i]).off).trim().replace(/[*_]+/g, ''); nodes.push({ level: 8, text: it.label + (rest ? ' — ' + (rest.length > 60 ? rest.slice(0, 58) + '…' : rest) : ''), line: i, kind: 'art' }); }
+      if (legal && it?.kind === 'art') { const rest = it.text.slice(it.end - Lex.strip(lines[i]).off).replace(BID_RE, '').replace(/\[\^[^\]]*\]/g, '').replace(/==|~~|<[^>]+>/g, '').replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, '$2').trim().replace(/[*_]+/g, ''); nodes.push({ level: 8, text: it.label + (rest ? ' — ' + (rest.length > 60 ? rest.slice(0, 58) + '…' : rest) : ''), line: i, kind: 'art' }); }
     }
     return { nodes, legal };
   }
@@ -2120,9 +2143,11 @@ const CommentPop = {
       if (App.fileMap.has(p)) {
         const md = Renderer.render(await App.readNote(p), p, { noProps: true }); md.style.padding = '0'; body.append(md);
         btns.append(h('button', { class: 'btn sm', html: icon('edit') + 'Editar', onclick: () => edit() }), h('button', { class: 'btn sm', html: icon('plus') + 'Abrir como nota', onclick: () => { this.hide(true); App.open(p, { newTab: true }); } }));
+        btns.append(h('button', { class: 'btn sm', html: icon('copy') + 'Copiar link', title: 'Copiar o link deste dispositivo', onclick: () => { this.hide(true); LinkCopy.dispositivo(notePath, label); } }));
       } else {
         body.append(h('div', { class: 'empty', style: { padding: '4px 0' }, text: 'Nenhum comentário neste dispositivo.' }));
         btns.append(h('button', { class: 'btn sm pri', html: icon('edit') + 'Comentar', onclick: () => edit() }));
+        btns.append(h('button', { class: 'btn sm', html: icon('copy') + 'Copiar link', title: 'Copiar o link deste dispositivo', onclick: () => { this.hide(true); LinkCopy.dispositivo(notePath, label); } }));
       }
     };
     const edit = async () => {
@@ -2581,6 +2606,34 @@ const MDHL = {
   }
 };
 
+/* copiar o link de um parágrafo ou dispositivo (Art. 20, § 1º…) */
+const LinkCopy = {
+  async textOf(path) { const v = App.tabs.map(t => t.view).find(v => v instanceof NoteView && v.path === path); return v ? v.ta.value : await App.readNote(path); },
+  labelFor(path, text, line) {
+    let it = null; try { it = Lex.analyze(text).items?.[line]; } catch (e) { }
+    if (it?.label) return `${stemOf(path)}, ${it.label}`;
+    const b = Blocks.plain((text.split('\n')[line] || '').replace(BID_RE, ''));
+    return b.length > 60 ? b.slice(0, 60) + '…' : b;
+  },
+  async line(path, line) {
+    const text = await this.textOf(path);
+    if (!(text.split('\n')[line] || '').trim()) { UI.toast('Escolha um parágrafo com texto.', true); return null; }
+    let id; try { id = await Blocks.ensure(path, line); } catch (e) { return null; }
+    return this.copy({ path, sub: '^' + id, label: this.labelFor(path, text, line) });
+  },
+  async dispositivo(path, label) {
+    const text = await this.textOf(path); let items = []; try { items = Lex.analyze(text).items || []; } catch (e) { }
+    const line = items.findIndex(x => x?.label === label); if (line < 0) { UI.toast('Dispositivo não encontrado: ' + label, true); return null; }
+    return this.line(path, line);
+  },
+  linkText(o) { return `[[${App.linkText(o.path)}#${o.sub}|${String(o.label || '').replace(/[|\]\[]/g, ' ')}]]`; },
+  async copy(o) {
+    const link = this.linkText(o); LastLink.set(o);
+    try { await navigator.clipboard.writeText(link); UI.toast('Link copiado: ' + o.label + '. Cole numa nota, ou selecione um trecho de PDF e toque em “Vincular ao copiado”.'); }
+    catch (e) { UI.prompt('Copie o link', link); }
+    return link;
+  }
+};
 class NoteView {
   constructor(tab, path, opts) { this.tab = tab; this.path = path; this.opts = opts; let m = opts.mode || Settings.get('defaultMode'); if (m === 'edit' || m === 'split') m = 'live'; this.mode = m; this.dirty = false; this.text = ''; }
   async mount() {
@@ -2603,7 +2656,33 @@ class NoteView {
     this.ta = new CMArea(this.cm);
     this.bind(); this.setMode(this.mode, true); this.syncTitle();
     if (this.opts.focusTitle) setTimeout(() => { this.titleIn.focus(); this.titleIn.select(); }, 50);
-    this.goto(this.opts);
+    this.cmHost.addEventListener('contextmenu', e => this.ctxMenu(e)); this.reader.addEventListener('contextmenu', e => this.ctxMenu(e));
+    const sp = debounce(() => this.savePos(), 400); this.edWrap.addEventListener('scroll', sp, { passive: true }); this.reader.addEventListener('scroll', sp, { passive: true }); this._sp = sp;
+    if (this.opts.line == null && !this.opts.sub && !this.opts.focusTitle) this.restorePos(); else this.goto(this.opts);
+  }
+  /* lembrar e restaurar o ponto de leitura */
+  savePos() {
+    if (!this.cm || this._restoring) return;
+    if (this.mode === 'read') { const r = this.reader; if (r.scrollHeight > 0) Pos.set(this.path, { mode: 'read', frac: r.scrollTop / Math.max(1, r.scrollHeight - r.clientHeight), cur: this.cm.state.selection.main.head }); return; }
+    const rect = this.edWrap.getBoundingClientRect(); if (!rect.height) return;
+    const pos = this.cm.posAtCoords({ x: rect.left + rect.width / 2, y: rect.top + 12 }, false);
+    const line = pos == null ? 0 : this.cm.state.doc.lineAt(pos).number - 1;
+    Pos.set(this.path, { line, cur: this.cm.state.selection.main.head, top: this.edWrap.scrollTop });
+  }
+  restorePos() {
+    const p = Pos.get(this.path); if (!p) return;
+    if (!this.edWrap.clientHeight && !this.reader.clientHeight) { this._pendingRestore = true; return; } this._pendingRestore = false; this._restoring = true;
+    const doc = this.cm.state.doc; const cur = Math.min(p.cur || 0, doc.length);
+    try { this.cm.dispatch({ selection: { anchor: cur } }); } catch (e) { }
+    const done = () => setTimeout(() => this._restoring = false, 300);
+    if (this.mode === 'read') { requestAnimationFrame(() => setTimeout(() => { const r = this.reader; r.scrollTop = (p.frac || 0) * Math.max(0, r.scrollHeight - r.clientHeight); done(); }, 60)); return; }
+    const ln = Math.min((p.line ?? 0) + 1, doc.lines); const L = doc.line(ln);
+    this.cm.dispatch({ effects: CM.EditorView.scrollIntoView(L.from, { y: 'start' }) });
+    requestAnimationFrame(() => setTimeout(() => {
+      const c = this.cm.coordsAtPos(L.from); const r = this.edWrap.getBoundingClientRect();
+      if (c) this.edWrap.scrollTop += c.top - r.top - 12; else if (p.top) this.edWrap.scrollTop = p.top;
+      done();
+    }, 60));
   }
   setMode(m, initial) {
     if (m === 'edit' || m === 'split') m = 'live';
@@ -2668,15 +2747,16 @@ class NoteView {
   async save() { if (!this.dirty) return; this.dirty = false; App.renderTabs(); const t = this.text; try { await App.writeNote(this.path, t); } catch (e) { this.dirty = true; App.renderTabs(); } }
   async flush() { this.saveSoon?.cancel(); await this.save(); }
   onRename(np) { this.path = np; this.titleIn.value = stemOf(np); this.syncTitle?.(); const nh = viewHead(this.tab, np, []); this.head.querySelector('.crumb').innerHTML = nh.querySelector('.crumb').innerHTML; }
-  onShow() { this.cm?.requestMeasure(); }
-  destroy() { this.saveSoon?.cancel(); this.statusSoon?.cancel(); Suggest.hide(); this.cm?.destroy(); }
+  onShow() { this.cm?.requestMeasure(); if (this._pendingRestore) requestAnimationFrame(() => this.restorePos()); }
+  onHide() { this.savePos(); }
+  destroy() { try { this.savePos(); } catch (e) { } this._sp?.cancel?.(); this.saveSoon?.cancel(); this.statusSoon?.cancel(); Suggest.hide(); this.cm?.destroy(); }
   goto(o = {}) {
     let line = o.line; const sub = o.sub || '';
     if (line == null && sub) {
       if (sub.startsWith('^')) { const b = Blocks.find(this.text, sub.slice(1)); if (b) line = b.line; else UI.toast('Parágrafo de destino não encontrado (^' + sub.slice(1) + ').', true); }
       else { const n = App.notes.get(this.path); const hd = (n?.headings || parseNote(this.text).headings).find(x => norm(x.text) === norm(sub)); if (hd) line = hd.line; }
     }
-    if (line == null) return;
+    if (line == null || line < 0 || !(line < this.cm.state.doc.lines)) return;
     const flash = el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
     if (this.mode === 'read') {
       let el = null;
@@ -2715,12 +2795,26 @@ class NoteView {
         insertText(ta, ta.selectionStart, ta.selectionEnd, `[[${pre}${link}${alias}]]`);
       } });
   }
-  async copyBlockLink() {
-    const ta = this.ta; const line = ta.value.slice(0, ta.selectionStart).split('\n').length - 1;
+  async copyBlockLink(line) {
+    const ta = this.ta; if (line == null) line = ta.value.slice(0, ta.selectionStart).split('\n').length - 1;
     if (!ta.value.split('\n')[line]?.trim()) return UI.toast('Coloque o cursor num parágrafo com texto.', true);
-    const id = await Blocks.ensure(this.path, line); const link = `[[${App.linkText(this.path)}#^${id}]]`;
-    try { await navigator.clipboard.writeText(link); UI.toast('Copiado: ' + link); } catch (e) { UI.prompt('Copie o vínculo', link); }
+    return LinkCopy.line(this.path, line);
   }
+  /* menu do botão direito (ou toque longo) sobre um parágrafo */
+  ctxMenu(e) {
+    let line = null, dispo = null, bid = null;
+    if (this.mode === 'read') {
+      const t = e.target; bid = t.closest?.('[data-block-id]')?.dataset.blockId; dispo = t.closest?.('[data-dispo]')?.dataset.dispo || t.closest?.('p,li')?.querySelector?.('[data-dispo]')?.dataset.dispo;
+      if (!bid && !dispo) return;
+    } else {
+      const pos = this.cm.posAtCoords({ x: e.clientX, y: e.clientY }); if (pos == null) return; line = this.cm.state.doc.lineAt(pos).number - 1;
+    }
+    e.preventDefault();
+    const items = [{ label: 'Copiar link deste ' + (dispo || (line != null && this.isDispo(line)) ? 'dispositivo' : 'parágrafo'), icon: 'copy', action: () => bid ? LinkCopy.copy({ path: this.path, sub: '^' + bid, label: dispo ? stemOf(this.path) + ', ' + dispo : stemOf(this.path) }) : dispo ? LinkCopy.dispositivo(this.path, dispo) : this.copyBlockLink(line) }];
+    const ll = LastLink.get(); if (this.mode !== 'read' && ll) items.push({ label: 'Colar link copiado: ' + ll.label, icon: 'link', action: () => { this.cm.dispatch({ selection: { anchor: this.cm.state.doc.line(line + 1).to } }); this.insertAtCursor(' ' + LinkCopy.linkText(ll)); } });
+    UI.menu(e.clientX, e.clientY, items);
+  }
+  isDispo(line) { try { return !!Lex.analyze(this.ta.value).items?.[line]?.label; } catch (e) { return false; } }
   insertAtCursor(text) {
     if (this.mode === 'read') this.setMode('live');
     const s = this.ta.selectionStart, e = this.ta.selectionEnd; insertText(this.ta, s, e, text);
@@ -2892,7 +2986,7 @@ const Links = {
       const target = a.dataset.href, sub = a.dataset.sub;
       const p = App.resolve(target, from) || (!target && from);
       Popover.hide();
-      if (p) { const page = +(/page=(\d+)/.exec(sub || '') || [])[1] || 0; App.open(p, { newTab: e.ctrlKey || e.metaKey, split: e.altKey ? 'row' : undefined, sub: sub && !page ? sub : null, page }); }
+      if (p) { const page = +(/page=(\d+)/.exec(sub || '') || [])[1] || 0, hl = +(/hl=(\d+)/.exec(sub || '') || [])[1] || 0; App.open(p, { newTab: e.ctrlKey || e.metaKey, split: e.altKey ? 'row' : undefined, sub: sub && !page ? sub : null, page, hl }); }
       else if (target) { const ex = App.resolve(App.safeName(target.split('/').pop()), from); if (ex) App.open(ex, { newTab: e.ctrlKey || e.metaKey }); else App.createNote(dirOf(target), target.split('/').pop(), '', { newTab: e.ctrlKey || e.metaKey }); }
     });
     let timer;
@@ -3443,7 +3537,27 @@ class PdfView {
     this.buildToolbar(); this.bind();
     Loading.show('Abrindo PDF…');
     try { await this.load(); } finally { Loading.hide(); }
-    if (this.opts.page) this.gotoPage(this.opts.page);
+    if (this.opts.page || this.opts.hl) this.goto(this.opts); else this.restorePos();
+  }
+  savePos() {
+    if (!this.pages.length || this._restoring || !this.scroller.clientHeight) return; const c = this.currentPage(); const pg = this.pages[c];
+    Pos.set(this.path, { page: c + 1, frac: (this.scroller.scrollTop - pg.el.offsetTop) / Math.max(1, pg.el.offsetHeight) });
+  }
+  restorePos() {
+    const p = Pos.get(this.path); if (!p || !p.page) return; const pg = this.pages[Math.min(p.page, this.pages.length) - 1]; if (!pg) return;
+    if (!this.scroller.clientHeight) { this._pendingRestore = true; return; } this._pendingRestore = false;
+    this._restoring = true; this.scroller.scrollTop = pg.el.offsetTop + (p.frac || 0) * pg.el.offsetHeight;
+    setTimeout(() => this._restoring = false, 400);
+  }
+  /* rolar até um trecho (destaque/vínculo) e piscar */
+  flashItem(hl, page) {
+    let pg = null, it = null;
+    for (const p of this.pages) { const f = (this.ann.pages[p.i] || []).find(x => x.ts === hl); if (f) { pg = p; it = f; break; } }
+    if (!it) { if (page) this.gotoPage(page); UI.toast('Trecho não encontrado (talvez tenha sido apagado).', true); return; }
+    const rects = it.rects || (it.p ? [[Math.min(...it.p.map(q => q[0])), Math.min(...it.p.map(q => q[1])) - (it.w || 4) / 2, Math.max(...it.p.map(q => q[0])) - Math.min(...it.p.map(q => q[0])), (it.w || 4)]] : it.x != null ? [[it.x, it.y, 30, 30]] : []);
+    const y0 = rects.length ? Math.min(...rects.map(r => r[1])) : 0;
+    this.scroller.scrollTop = pg.el.offsetTop + y0 * this.scale - this.scroller.clientHeight / 3;
+    rects.forEach(r => { const d = h('div', { class: 'pdf-flash', style: { left: r[0] / pg.w * 100 + '%', top: r[1] / pg.h * 100 + '%', width: r[2] / pg.w * 100 + '%', height: r[3] / pg.h * 100 + '%' } }); pg.el.append(d); setTimeout(() => d.remove(), 2400); });
   }
   async load(keepPage) {
     const lib = await LIBS.pdfjs();
@@ -3579,7 +3693,7 @@ class PdfView {
   setTool(t) { if (this.textEd) this.commitText(); this.closePop(); if (t !== 'eraser' && DRAW_TOOLS.has(t)) this.prevTool = t; this.tool = t; this.root.dataset.tool = t; this.saveToolState(); this.buildToolbar(); this.pages.forEach(p => this.applyTouchAction(p)); this.hideSelPop(); }
   currentPage() { if (!this.pages.length) return null; const st = this.scroller.scrollTop + this.scroller.clientHeight * 0.3; let cur = 0; for (const p of this.pages) { if (p.el.offsetTop <= st) cur = p.i; else break; } return cur; }
   gotoPage(n) { const p = this.pages[Math.max(1, Math.min(n, this.pages.length)) - 1]; if (p) this.scroller.scrollTop = p.el.offsetTop - 8; }
-  goto(o) { if (o.page) this.gotoPage(o.page); }
+  goto(o) { if (o.hl) { const go = () => this.flashItem(o.hl, o.page); this.pages.length ? go() : setTimeout(go, 600); } else if (o.page) this.gotoPage(o.page); }
   /* ---------- eventos ---------- */
   bind() {
     const toU = (e, pg) => { const r = pg.el.getBoundingClientRect(); return [(e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale, e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5]; };
@@ -3720,7 +3834,7 @@ class PdfView {
     this.scroller.addEventListener('pointermove', e => { if (!drag) return; this.scroller.scrollLeft = drag.l - (e.clientX - drag.x); this.scroller.scrollTop = drag.t - (e.clientY - drag.y); });
     this.scroller.addEventListener('pointerup', () => { drag = null; this.scroller.style.cursor = ''; });
     this.scroller.addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); this.setScale(this.scale * Math.exp(-e.deltaY * 0.004)); } }, { passive: false });
-    this.scroller.addEventListener('scroll', debounce(() => { const c = this.currentPage(); if (this.pageIn && document.activeElement !== this.pageIn) this.pageIn.value = c + 1; this.thumbs.querySelectorAll('.th').forEach(t => t.classList.toggle('on', +t.dataset.i === c)); }, 120));
+    this.scroller.addEventListener('scroll', debounce(() => { this.savePos(); const c = this.currentPage(); if (this.pageIn && document.activeElement !== this.pageIn) this.pageIn.value = c + 1; this.thumbs.querySelectorAll('.th').forEach(t => t.classList.toggle('on', +t.dataset.i === c)); }, 120));
     /* seleção de texto */
     this.selHandler = () => setTimeout(() => this.checkSelection(), 10);
     this.pagesEl.addEventListener('pointerup', this.selHandler);
@@ -3823,7 +3937,7 @@ class PdfView {
     const entries = [];
     for (const pg of this.pages) {
       const items = this.ann.pages[pg.i] || [];
-      for (let k = 0; k < items.length; k++) { const it = items[k]; if (it.t === 'mark' || it.t === 'hl' || it.t === 'sticky' || (it.t === 'link' && ((it.tags || []).length || (it.notes || []).length))) entries.push({ it, pg, k }); }
+      for (let k = 0; k < items.length; k++) { const it = items[k]; if (it.t === 'mark' || it.t === 'hl' || it.t === 'sticky' || (it.t === 'link' && ((it.tags || []).length || (it.notes || []).length || (it.targets || []).length))) entries.push({ it, pg, k }); }
     }
     if (!entries.length) { if (!opt.silent) UI.toast('Ainda não há destaques nem post-its neste PDF.'); return; }
     entries.sort((a, b) => (a.it.ts || 0) - (b.it.ts || 0) || a.pg.i - b.pg.i || a.k - b.k);
@@ -3833,7 +3947,7 @@ class PdfView {
       for (const { it, pg } of entries) {
         const pn = pg.i + 1, pl = `[[${link}#page=${pn}|p. ${pn}]]`;
         if (it.t === 'sticky') { const body = (it.text || '').trim(); if (!body) continue; lines.push(`> [!note] Post-it — ${pl}`, ...body.split('\n').map(l => '> ' + l), ''); continue; }
-        if (it.t === 'link') { const tg = (it.tags || []).map(t => '#' + t).join(' '); const nt = (it.notes || []).filter(p => App.fileMap.has(p)).map(p => `[[${App.linkText(p)}]]`).join(', '); lines.push(`- 🔗 “${(it.txt || '').replace(/\s+/g, ' ')}” — ${pl}${tg ? ' — ' + tg : ''}${nt ? ' — vinculado a ' + nt : ''}`, ''); continue; }
+        if (it.t === 'link') { const tg = (it.tags || []).map(t => '#' + t).join(' '); const nt = [...(it.notes || []).filter(p => App.fileMap.has(p)).map(p => `[[${App.linkText(p)}]]`), ...(it.targets || []).filter(t => App.fileMap.has(t.path)).map(t => LinkCopy.linkText(t))].join(', '); lines.push(`- 🔗 “${(it.txt || '').replace(/\s+/g, ' ')}” — ${pl}${tg ? ' — ' + tg : ''}${nt ? ' — vinculado a ' + nt : ''}`, ''); continue; }
         const txt = this.textUnder(await this.pageText(pg), it);
         n++; const col = /^#[0-9a-f]{6}$/i.test(it.c) ? it.c + '80' : it.c;
         lines.push(`${n}. <mark style="background:${col}">${esc(txt || '(destaque sem texto reconhecível, por exemplo sobre imagem ou PDF escaneado)')}</mark> — ${pl}`, '');
@@ -3958,6 +4072,8 @@ class PdfView {
       h('span', { class: 'sel-colors' }, ...Settings.get('hlColors').map(c => h('button', { class: 'sel-dot' + (c === this.hlColor ? ' on' : ''), title: 'Marcar com esta cor', style: { background: c }, onmousedown: e => e.preventDefault(), onclick: () => { this.hlColor = c; this.saveToolState(); const cur = getSelection(); const rr = cur.rangeCount ? [...cur.getRangeAt(0).getClientRects()].filter(q => q.width > 1 && q.height > 1) : rects; this.markSelection(rr.length ? rr : rects); cur.removeAllRanges(); this.hideSelPop(); } }))),
       h('button', { text: 'Copiar', onmousedown: e => e.preventDefault(), onclick: () => { navigator.clipboard.writeText(text); UI.toast('Copiado.'); this.hideSelPop(); } }),
       h('button', { html: icon('link') + ' Nota', title: 'Vincular este trecho a uma nota (cita o trecho na nota, com link de volta para esta página)', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.linkToNote(rr.length ? rr : rects, text); } }),
+      LastLink.get() && LastLink.get().path !== this.path ? h('button', { html: icon('link') + ' Vincular ao copiado', title: 'Vincular este trecho ao link copiado: ' + LastLink.get().label, onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.linkToCopied(rr.length ? rr : rects, text); } }) : '',
+      h('button', { html: icon('copy') + ' Copiar link', title: 'Copiar o link deste trecho, para colar numa nota (abre o PDF já neste ponto)', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.copyExcerptLink(rr.length ? rr : rects, text); } }),
       h('button', { html: icon('hash') + ' Tag', title: 'Marcar este trecho com uma tag', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.tagSelection(rr.length ? rr : rects, text); } }),
       h('button', { html: icon('star') + ' Favorito', title: 'Adicionar este trecho aos favoritos', onmousedown: e => e.preventDefault(), onclick: () => { const rr = this.curSelRects(); this.hideSelPop(); getSelection().removeAllRanges(); this.favSelection(rr.length ? rr : rects, text); } }),
       h('button', { html: icon('sparkles') + ' Gemini', onmousedown: e => e.preventDefault(), onclick: () => { this.hideSelPop(); AI.focus('pdf', `Sobre este trecho do PDF (p. ${pageNo}):\n\n"${text}"\n\n`); } }));
@@ -3993,18 +4109,47 @@ class PdfView {
     const [pg, merged] = first; const arr = (this.ann.pages[pg.i] ||= []);
     // reaproveita um vínculo existente sobre o mesmo trecho
     let it = arr.find(x => x.t === 'link' && JSON.stringify(x.rects) === JSON.stringify(merged));
-    if (!it) { it = { t: 'link', rects: merged, txt: text, ts: Date.now(), notes: [], tags: [] }; arr.push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); }
+    if (!it) { it = { t: 'link', rects: merged, txt: text, ts: Date.now(), notes: [], tags: [], targets: [] }; arr.push(it); this.pushUndo({ t: 'add', page: pg.i, item: it }); }
     this.drawInk(pg); this.saveSoon(); return { it, pg };
+  }
+  addTarget(ex, rects, text, tg) {
+    const r = ex || this.linkItemFor(rects, text); if (!r) return null; const { it, pg } = r;
+    it.targets ||= []; if (!it.targets.some(t => t.path === tg.path && t.sub === tg.sub)) it.targets.push(tg);
+    this.saveSoon(); this.drawInk(pg); this.buildReview({ silent: true });
+    UI.toast('Trecho vinculado a ' + tg.label + '.'); return it;
+  }
+  linkToCopied(rects, text, ex) { const ll = LastLink.get(); if (!ll) return UI.toast('Nenhum link copiado ainda. Numa nota, use “Copiar link” no artigo ou parágrafo.', true); if (ll.path === this.path) return UI.toast('O link copiado é deste próprio PDF.', true); this.addTarget(ex, rects, text, { path: ll.path, sub: ll.sub, label: ll.label }); }
+  async copyExcerptLink(rects, text, ex) {
+    const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r;
+    let t = ''; try { t = this.textUnder(await this.pageText(pg), { t: 'mark', rects: it.rects }); } catch (e) { } if (!t) t = (it.txt || text || '').replace(/\s+/g, ' ').trim(); const label = '“' + (t.length > 60 ? t.slice(0, 60) + '…' : t) + '” (' + stemOf(this.path) + ', p. ' + (pg.i + 1) + ')';
+    return LinkCopy.copy({ path: this.path, sub: `page=${pg.i + 1}&hl=${it.ts}`, label });
   }
   async linkToNote(rects, text, ex) {
     const pre = ex || { pg: [...this.selRects(rects).keys()][0] }; if (!pre.pg) return; const pageNo = pre.pg.i + 1;
     const notes = [...App.notes.values()].sort((a, b) => b.mtime - a.mtime).map(n => n.path);
     const quote = `\n> [!quote] ${stemOf(this.path)}, p. ${pageNo}\n` + text.split('\n').map(l => '> ' + l).join('\n') + `\n> [[${App.linkText(this.path)}#page=${pageNo}|abrir no PDF]]\n`;
-    const done = async p => { const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; await App.editNote(p, cur => cur.replace(/\s*$/, '') + '\n' + quote); if (!it.notes.includes(p)) it.notes.push(p); this.saveSoon(); this.drawInk(pg); UI.toast('Trecho vinculado a “' + stemOf(p) + '”.'); };
-    UI.picker({ placeholder: 'Vincular este trecho a qual nota? (Shift+Enter cria nova)', hint: 'O trecho é citado na nota com um link de volta para esta página do PDF',
+    const whole = async p => { const r = ex || this.linkItemFor(rects, text); if (!r) return; const { it, pg } = r; await App.editNote(p, cur => cur.replace(/\s*$/, '') + '\n' + quote); if (!it.notes.includes(p)) it.notes.push(p); this.saveSoon(); this.drawInk(pg); UI.toast('Trecho citado em “' + stemOf(p) + '”.'); };
+    const parts = async p => {
+      const txt = await LinkCopy.textOf(p); const blocks = Blocks.list(txt).filter(b => b.text);
+      const WHOLE = { whole: true };
+      UI.picker({ placeholder: `Vincular a qual artigo ou parágrafo de “${stemOf(p)}”? (ex.: art 20)`, hint: 'Enter vincula ao item escolhido · o primeiro item cita o trecho no fim da nota',
+        items: q => {
+          const m = /^\s*(?:art(?:igo)?\.?\s*)?(\d+(?:\.\d{3})*)\s*[º°o]?\s*(?:-\s*([a-z]))?\s*$/i.exec(q);
+          let list = Blocks.match(q, blocks);
+          if (m) { const n = m[1].replace(/\./g, ''); const rx = new RegExp('^\\W*art(?:igo)?\\.?\\s*' + n.replace(/(\d)(?=(\d{3})+$)/g, '$1\\.?') + '\\s*[º°o]?' + (m[2] ? '\\s*-\\s*' + m[2] : '(?!\\s*-\\s*[a-z]\\b)') + '(?![\\d.]\\d)', 'i'); const ex2 = blocks.filter(b => rx.test(b.text)); list = [...ex2, ...list.filter(b => !ex2.includes(b))]; }
+          return [WHOLE, ...list.slice(0, 150)];
+        },
+        render: b => b.whole ? icon('quote') + '<span class="main">Nota inteira</span><span class="sub">cita o trecho no fim da nota</span>' : (b.heading ? icon('hash') : '<span style="color:var(--faint);width:18px;text-align:center">¶</span>') + '<span class="main">' + esc(b.text.slice(0, 140)) + '</span><span class="sub">linha ' + (b.line + 1) + '</span>',
+        onPick: async b => {
+          if (b.whole) return whole(p);
+          let sub; if (b.heading) sub = b.text; else { try { sub = '^' + await Blocks.ensure(p, b.line); } catch (e) { return; } }
+          this.addTarget(ex, rects, text, { path: p, sub, label: b.heading ? stemOf(p) + ' › ' + b.text : LinkCopy.labelFor(p, txt, b.line) });
+        } });
+    };
+    UI.picker({ placeholder: 'Vincular este trecho a qual nota? (depois você escolhe o artigo ou parágrafo)', hint: 'Enter escolhe a nota · Shift+Enter cria nota nova com o trecho citado',
       items: q => notes.map(p => ({ p, m: fuzzy(q, stemOf(p)) })).filter(x => x.m).sort((a, b) => q ? b.m.score - a.m.score : 0).slice(0, 60).map(x => x.p),
       render: p => icon('filetext') + '<span class="main">' + esc(stemOf(p)) + '</span><span class="sub">' + esc(dirOf(p)) + '</span>',
-      onPick: done, onEmptyEnter: async q => { const p = await App.createNote(dirOf(this.path), q || ('Notas — ' + stemOf(this.path)), '', { open: false }); await done(p); } });
+      onPick: p => setTimeout(() => parts(p), 30), onEmptyEnter: async q => { const p = await App.createNote(dirOf(this.path), q || ('Notas — ' + stemOf(this.path)), '', { open: false }); await whole(p); } });
   }
   async tagSelection(rects, text, ex) {
     if (!ex && !this.selRects(rects).size) return;
@@ -4023,11 +4168,15 @@ class PdfView {
   }
   linkMenu(e, pg, it) {
     const items = [];
+    (it.targets || []).forEach(t => items.push({ label: 'Abrir ' + t.label, icon: 'link', action: () => App.fileMap.has(t.path) ? App.openBeside(t.path, { sub: t.sub }) : UI.toast('O destino não existe mais.') }));
     (it.notes || []).forEach(p => items.push({ label: 'Abrir nota “' + stemOf(p) + '”', icon: 'filetext', action: () => App.fileMap.has(p) ? App.openBeside(p) : UI.toast('A nota não existe mais.') }));
     (it.tags || []).forEach(t => items.push({ label: 'Ver tag #' + t, icon: 'hash', action: () => Search.run('tag:#' + t) }));
     if (it.fav) items.push({ label: 'Remover dos favoritos', icon: 'star', action: () => { App.bookmarks = App.bookmarks.filter(b => b !== it.fav); App.saveBookmarks(); Panels.refresh(); it.fav = null; this.saveSoon(); } });
     const rr = it.rects; const text = it.txt || '';
-    items.push('-', { label: 'Vincular a outra nota…', icon: 'link', action: () => this.linkToNote([], text, { it, pg }) }, { label: 'Adicionar tag…', icon: 'hash', action: () => this.tagSelection([], text, { it, pg }) },
+    const ll = LastLink.get();
+    items.push('-', { label: 'Copiar link deste trecho', icon: 'copy', action: () => this.copyExcerptLink([], text, { it, pg }) });
+    if (ll && ll.path !== this.path) items.push({ label: 'Vincular ao copiado: ' + ll.label, icon: 'link', action: () => this.linkToCopied([], text, { it, pg }) });
+    items.push({ label: 'Vincular a outra nota…', icon: 'link', action: () => this.linkToNote([], text, { it, pg }) }, { label: 'Adicionar tag…', icon: 'hash', action: () => this.tagSelection([], text, { it, pg }) },
       { label: 'Remover este vínculo', icon: 'trash', danger: true, action: () => { const arr = this.ann.pages[pg.i]; const idx = arr.indexOf(it); if (idx < 0) return; arr.splice(idx, 1); this.pushUndo({ t: 'del', page: pg.i, items: [{ item: it, idx }] }); this.favSync([it], false); this.drawInk(pg); this.saveSoon(); } });
     UI.menu(e.clientX, e.clientY, items);
   }
@@ -4150,13 +4299,14 @@ class PdfView {
     this.path = np; const nh = viewHead(this.tab, np, []); this.head.querySelector('.crumb').innerHTML = nh.querySelector('.crumb').innerHTML; }
   fitWidth() { return Math.min(1.8, Math.max(0.4, (this.scroller.clientWidth - 40) / Math.max(...this.pages.map(p => p.w)))); }
   onShow() {
+    if (this._pendingRestore) requestAnimationFrame(() => this.restorePos());
     requestAnimationFrame(() => {
       if (this.needsFit && this.scroller.clientWidth && this.pages.length) { this.needsFit = false; this.setScale(this.fitWidth(), true); }
       this.pages.filter(p => p.vis).forEach(p => this.renderPage(p));
     });
   }
-  onHide() { this.hideSelPop(); this.closePop(); }
-  destroy() { this.closePop(); this.ro?.disconnect(); this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
+  onHide() { this.savePos(); this.hideSelPop(); this.closePop(); }
+  destroy() { try { this.savePos(); } catch (e) { } this.closePop(); this.ro?.disconnect(); this.saveSoonD?.cancel(); this.thumbIO?.disconnect(); this.io?.disconnect(); this.hideSelPop(); document.removeEventListener('selectionchange', this.selChange); this.doc?.destroy(); }
 }
 
 /* ===================== CADERNOS (nota → PDF, em branco, imagem → PDF) ===================== */
@@ -4609,6 +4759,8 @@ const Shell = {
     Panels.showLeft('files'); Panels.showRight(localStorage.getItem('codex.rightPane') || 'backlinks');
     $$('#right .side-tab').forEach(t => t.addEventListener('click', () => localStorage.setItem('codex.rightPane', t.dataset.k)));
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Settings.apply());
+    window.addEventListener('pagehide', () => App.tabs.forEach(t => { try { t.view?.savePos?.(); } catch (e) { } }));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) App.tabs.forEach(t => { try { t.view?.savePos?.(); } catch (e) { } }); });
     window.addEventListener('beforeunload', e => { const dirty = App.tabs.some(t => t.view?.dirty || t.view?.annDirty) || App.writeChains.size; if (dirty) { App.tabs.forEach(t => t.view?.flush?.()); e.preventDefault(); e.returnValue = ''; } });
     document.addEventListener('visibilitychange', () => { if (document.hidden) App.tabs.forEach(t => t.view?.flush?.()); });
     const last = Recent.list()[0];

@@ -168,3 +168,21 @@ Selecione um trecho com a ferramenta de seleção, pelo mouse ou pela caneta. O 
 - Favorito: o trecho vai para os favoritos. Clicar nele abre o PDF direto na página.
 
 Os trechos vinculados ficam sublinhados em azul tracejado. Tocar neles abre um menu para abrir a nota, ver a tag, adicionar outros vínculos ou removê-los.
+
+## Copiar o link de um artigo e vincular trechos de PDF
+
+- Copiar o link de um artigo, parágrafo, inciso ou parágrafo comum de uma nota (por exemplo, o art. 20 da Constituição):
+  - ponha o cursor na linha e toque no botão de copiar da barra de formatação, ao lado do ¶ (ou Ctrl/⌘+Shift+C);
+  - ou clique com o botão direito sobre a linha e escolha "Copiar link deste dispositivo";
+  - ou use "Copiar link" na janela de comentário do dispositivo.
+- O link sai no formato `[[Constituição…#^código|Constituição…, Art. 20]]`. Cole em qualquer nota.
+- No PDF, selecione o trecho que cita o artigo e toque em "Vincular ao copiado". O trecho fica sublinhado em azul, e tocar nele abre a nota já no art. 20.
+- Pelo botão "Nota" do PDF, você escolhe a nota e, em seguida, o artigo ou parágrafo. Digite, por exemplo, "art 20": o art. 20 aparece primeiro, à frente do 200 e do 201. A opção "Nota inteira" continua citando o trecho no fim da nota.
+- No sentido inverso: "Copiar link" no menu de seleção do PDF (ou "Copiar link deste trecho", ao tocar num trecho vinculado) copia um link que abre o PDF na página certa, rola até o trecho e o faz piscar. Cole esse link na nota, ao lado do artigo.
+- O reconhecimento de artigos agora também funciona nas leis em formato de lista (`* **Art. 20.**`), como a Constituição e as leis inseridas no cofre. Com isso, a árvore da estrutura, os comentários por dispositivo e os rótulos dos links passam a funcionar nelas.
+
+## Voltar ao ponto onde parou
+
+- O Códex lembra a posição de cada nota e de cada PDF.
+- Ao reabrir o arquivo, mesmo depois de fechar o app, você volta ao mesmo trecho.
+- Se você abrir o arquivo por um link que aponta para um ponto específico, prevalece o ponto do link.
